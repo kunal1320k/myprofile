@@ -49,9 +49,9 @@ const LINKS = [
       leafImgs[i] = im;
     });
 
-    let W = innerWidth, H = innerHeight, DPR = Math.min(devicePixelRatio || 1, 2);
+    let W = innerWidth, H = innerHeight, DPR = (innerWidth < 768) ? 1 : Math.min(devicePixelRatio || 1, 2);
     function resizeCanvas() {
-      W = innerWidth; H = innerHeight; DPR = Math.min(devicePixelRatio || 1, 2);
+      W = innerWidth; H = innerHeight; DPR = (innerWidth < 768) ? 1 : Math.min(devicePixelRatio || 1, 2);
       canvas.width = W * DPR; canvas.height = H * DPR;
       canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
       ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
