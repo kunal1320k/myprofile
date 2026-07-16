@@ -198,30 +198,10 @@ const LINKS = [
       }
       const { cx, cy } = getDropCenter();
 
-      // lock coords for both layers
-      aestheticRoot.style.setProperty('--cx', cx + 'px');
-      aestheticRoot.style.setProperty('--cy', cy + 'px');
-      waveRing.style.setProperty('--cx', cx + 'px');
-      waveRing.style.setProperty('--cy', cy + 'px');
-
       // ensure aesthetic is at top (scroll 0) before measuring clip
       aestheticRoot.scrollTop = 0;
-      // audio pop
-      try {
-        const AC = window.AudioContext || window.webkitAudioContext;
-        const ac = new AC();
-        const osc = ac.createOscillator(); const gain = ac.createGain();
-        osc.type = "sine";
-        osc.frequency.setValueAtTime(180, ac.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(58, ac.currentTime + 0.95);
-        gain.gain.setValueAtTime(0.22, ac.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + 0.95);
-        osc.connect(gain); gain.connect(ac.destination);
-        osc.start(); osc.stop(ac.currentTime + 1);
-      } catch (_e) { }
 
       try { themeAudio.play().catch(() => { }) } catch (_e) { }
-      shuffleTrack(true);
 
       // 1. RESET to 0 circle EXACTLY at button - no transition
       aestheticRoot.style.transition = 'none';
@@ -233,6 +213,9 @@ const LINKS = [
       // double reflow to ensure browser registers start pos
       void aestheticRoot.offsetWidth;
       void aestheticRoot.offsetHeight;
+
+      // Start the leaf canvas fade-in (hardware-accelerated opacity transition)
+      canvas.style.opacity = '1';
 
       // 2. Animate to huge circle from SAME point
       requestAnimationFrame(() => {

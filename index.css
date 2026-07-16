@@ -240,10 +240,11 @@
     #leaves-canvas {
       position: fixed;
       inset: 0;
-      z-index: 2;
+      z-index: 22;
       pointer-events: none;
-      will-change: transform;
-      transform: translateZ(0);
+      will-change: opacity;
+      opacity: 0;
+      transition: opacity 1.5s ease;
     }
 
     #wave-ring {
