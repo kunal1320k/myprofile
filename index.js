@@ -49,9 +49,18 @@ const LINKS = [
       leafImgs[i] = im;
     });
 
-    let W = innerWidth, H = innerHeight, DPR = (innerWidth < 768) ? 1 : Math.min(devicePixelRatio || 1, 2);
+    // FIX: Use stable dimensions, handle Chrome address bar hide/show without flicker
+    let W = innerWidth, H = innerHeight, DPR = 1;
+    function getViewportHeight() {
+      // visualViewport is more stable on Chrome mobile
+      return window.visualViewport ? window.visualViewport.height : innerHeight;
+    }
     function resizeCanvas() {
-      W = innerWidth; H = innerHeight; DPR = (innerWidth < 768) ? 1 : Math.min(devicePixelRatio || 1, 2);
+      const newW = innerWidth;
+      // On mobile, use the largest height (lvh) to avoid resize flicker when URL bar hides
+      const newH = window.innerWidth < 768 ? Math.max(innerHeight, document.documentElement.clientHeight, getViewportHeight()) : innerHeight;
+      W = newW; H = newH;
+      DPR = (newW < 768) ? 1 : Math.min(devicePixelRatio || 1, 2);
       canvas.width = W * DPR; canvas.height = H * DPR;
       canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
       ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
@@ -85,14 +94,28 @@ const LINKS = [
       }
     }
     initLeaves();
+    // FIX: update canvas height on address-bar hide/show but don't re-init leaves (prevents flicker)
+    let resizeTimeout;
     addEventListener('resize', () => {
-      if (isMobile() && innerWidth === lastW) {
-        return;
-      }
-      lastW = innerWidth;
-      resizeCanvas();
-      initLeaves();
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(() => {
+        const newW = innerWidth;
+        const widthChanged = newW !== lastW;
+        // Always update canvas size to match viewport
+        resizeCanvas();
+        if (widthChanged) {
+          lastW = newW;
+          initLeaves();
+        }
+      }, 100);
     }, { passive: true });
+    // Also listen to visualViewport resize (Chrome mobile)
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', () => {
+        // Only resize canvas, not leaves
+        resizeCanvas();
+      }, { passive: true });
+    }
 
     // uncapped RAF loop with delta
     let lastT = performance.now();
@@ -165,9 +188,14 @@ const LINKS = [
       return { cx, cy };
     }
 
+    let dropStarted = false;
     function doDrop(e) {
-      if (revealed) return;
-      if (e) e.preventDefault();
+      if (revealed || dropStarted) return;
+      dropStarted = true;
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
       const { cx, cy } = getDropCenter();
 
       // lock coords for both layers
@@ -211,8 +239,9 @@ const LINKS = [
         aestheticRoot.style.transition = 'clip-path 1.65s cubic-bezier(0.85,0,0.15,1), -webkit-clip-path 1.65s cubic-bezier(0.85,0,0.15,1)';
         aestheticRoot.style.webkitTransition = 'clip-path 1.65s cubic-bezier(0.85,0,0.15,1), -webkit-clip-path 1.65s cubic-bezier(0.85,0,0.15,1)';
         requestAnimationFrame(() => {
-          aestheticRoot.style.clipPath = `circle(200vmax at ${cx}px ${cy}px)`;
-          aestheticRoot.style.webkitClipPath = `circle(200vmax at ${cx}px ${cy}px)`;
+          // FIX: 150% is cheaper than 200vmax on Chrome mobile GPU
+          aestheticRoot.style.clipPath = `circle(150% at ${cx}px ${cy}px)`;
+          aestheticRoot.style.webkitClipPath = `circle(150% at ${cx}px ${cy}px)`;
         });
       });
 
@@ -242,18 +271,22 @@ const LINKS = [
         aestheticRoot.removeEventListener('transitionend', onEnd);
         rawRoot.style.display = 'none';
         aestheticRoot.classList.add('revealed');
+        // FIX: clean up will-change and transitions to free GPU memory
         aestheticRoot.style.clipPath = 'none';
         aestheticRoot.style.webkitClipPath = 'none';
         aestheticRoot.style.transition = 'none';
+        aestheticRoot.style.webkitTransition = 'none';
+        aestheticRoot.style.willChange = 'auto';
         document.body.classList.remove('raw');
         document.body.classList.add('aesthetic');
-        document.body.style.position = 'relative';
-        document.body.style.inset = 'auto';
-        document.body.style.height = 'auto';
-        document.body.style.overflow = 'auto';
-        document.body.style.overflowY = 'auto';
-        document.documentElement.style.overflow = 'auto';
-        document.documentElement.style.height = 'auto';
+        // FIX: let CSS class handle body styles, don't set inline to avoid Chrome repaint flash
+        document.body.style.position = '';
+        document.body.style.inset = '';
+        document.body.style.height = '';
+        document.body.style.overflow = '';
+        document.body.style.overflowY = '';
+        document.documentElement.style.overflow = '';
+        document.documentElement.style.height = '';
         revealed = true;
       };
 
@@ -266,8 +299,15 @@ const LINKS = [
       setTimeout(finishReveal, 1800);
     }
 
+    // FIX: use pointerdown which is more reliable on Chrome mobile, prevent double fire
     dropBtn.addEventListener('click', doDrop);
-    dropBtn.addEventListener('touchend', (e) => { e.preventDefault(); doDrop(e); }, { passive: false });
+    dropBtn.addEventListener('touchend', (e) => { 
+      e.preventDefault(); 
+      e.stopPropagation();
+      doDrop(e); 
+    }, { passive: false });
+    // Prevent context menu / double-tap zoom flicker
+    dropBtn.addEventListener('touchstart', (e) => { e.stopPropagation(); }, { passive: true });
 
     // allow Enter key
     addEventListener('keydown', (e) => { if (e.key === 'Enter' && !revealed) doDrop() });
