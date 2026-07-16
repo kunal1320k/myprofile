@@ -29,6 +29,68 @@ const shuffleBtn = document.getElementById('shuffle-btn');
 let revealed = false;
 let isMuted = false;
 
+// ── AUDIO ANALYSER (beat-reactive leaves) ─────────────────────────────────
+let audioCtx = null;
+let analyser = null;
+let freqData = null;
+let beatEnergy = 0;      // smoothed low-freq energy  0..1
+let beatPeak  = 0;       // peak tracker for normalisation
+let beatSmooth = 0;      // extra-smooth value for gentle sway
+
+function initAudioAnalyser() {
+  if (audioCtx) return;
+
+  // Local file:// protocol blocks Web Audio media element readers due to CORS security policies.
+  // We disable the analyser locally under file:// so the song can play directly through the element.
+  if (window.location.protocol === 'file:') {
+    console.warn(
+      '🍂 Beat-reactive leaves are disabled locally under file:// due to browser CORS security restrictions.\n' +
+      'To test the beat interaction locally, please run a local server (e.g. "python -m http.server 8000") or upload to GitHub Pages!'
+    );
+    return;
+  }
+
+  try {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 256;
+    analyser.smoothingTimeConstant = 0.75;
+    freqData = new Uint8Array(analyser.frequencyBinCount);
+
+    // Standard media element source (fully supported across Chrome, Firefox, Safari)
+    const src = audioCtx.createMediaElementSource(themeAudio);
+    src.connect(analyser);
+    analyser.connect(audioCtx.destination);
+  } catch (err) {
+    console.warn('Audio analyser failed to initialize:', err);
+    audioCtx = null;
+    analyser = null;
+    freqData = null;
+  }
+}
+
+function updateBeat() {
+  if (!analyser || !freqData) {
+    beatEnergy = 0;
+    beatSmooth = 0;
+    return;
+  }
+  analyser.getByteFrequencyData(freqData);
+  // Sum the first ~8 bins (bass ~20-300 Hz at 44100/256 ≈ 172 Hz/bin)
+  let sum = 0;
+  const bassBins = Math.min(8, freqData.length);
+  for (let i = 0; i < bassBins; i++) sum += freqData[i];
+  const raw = sum / (bassBins * 255); // 0..1
+
+  // Dynamic peak normalisation
+  beatPeak = Math.max(beatPeak * 0.9985, raw);
+  const normalised = beatPeak > 0.02 ? Math.min(raw / beatPeak, 1) : raw;
+
+  // Two smoothed values: snappy for burst, slow for ambient sway
+  beatEnergy = beatEnergy * 0.55 + normalised * 0.45; // fast
+  beatSmooth = beatSmooth * 0.88 + normalised * 0.12; // slow ambient
+}
+
 // render links
 LINKS.forEach(l => {
   const a = document.createElement('a');
@@ -127,17 +189,34 @@ let rafId;
 function frame(t) {
   const dt = Math.min((t - lastT) / 16.666, 3); // normalize to 60fps base, but uncapped
   lastT = t;
+
+  // ── Beat update ──────────────────────────────────────────────────────────
+  updateBeat();
+  // Beat multipliers applied to leaf physics
+  const beatBurst   = beatEnergy;                        // 0..1, snappy
+  const beatAmbient = beatSmooth;                        // 0..1, slow
+  const speedBoost  = 1 + beatBurst  * 2.8;             // up to 3.8× fall speed
+  const spinBoost   = 1 + beatBurst  * 4.0;             // extra spin on beat
+  const wobbleBoost = 1 + beatAmbient * 1.4;            // gentle sway modulation
+  const scaleBoost  = 1 + beatBurst  * 0.18;            // subtle size pulse
+
   ctx.clearRect(0, 0, W, H);
   const wind = Math.sin(t * 0.00032) * 1.1 + Math.sin(t * 0.00078) * 0.55 + Math.cos(t * 0.00019) * 0.35;
 
   for (let i = 0; i < leaves.length; i++) {
     const m = leaves[i];
-    m.wobble += m.wobbleSpeed * dt;
+    // Each leaf has a slightly different phase so they don't all move identically
+    const leafBeat = beatBurst  * (0.7 + (i % 5) * 0.12);
+    const leafAmb  = beatAmbient * (0.8 + (i % 3) * 0.1);
+
+    m.wobble += m.wobbleSpeed * dt * (1 + leafAmb * 0.6);
     m.vx += (wind * 0.0065 + Math.sin(m.wobble) * 0.007) * dt;
     m.vx *= Math.pow(0.9965, dt);
-    m.x += (m.vx + Math.cos(m.wobble) * m.wobbleAmp * 0.46 + wind * 0.38) * dt;
-    m.y += m.vy * (0.7 + m.depth * 0.6) * dt;
-    m.rot += (m.rotSpeed + Math.sin(m.wobble * 0.6) * 0.006) * dt;
+    m.x += (m.vx + Math.cos(m.wobble) * m.wobbleAmp * wobbleBoost * 0.46 + wind * 0.38) * dt;
+    // Beat makes leaves fall faster
+    m.y += m.vy * (0.7 + m.depth * 0.6) * speedBoost * dt;
+    // Beat increases rotation speed
+    m.rot += (m.rotSpeed * spinBoost + Math.sin(m.wobble * 0.6) * 0.006) * dt;
 
     if (m.y > H + 90) { m.y = -90 - Math.random() * 200; m.x = Math.random() * W; m.vx = (Math.random() - 0.5) * 0.7; }
     if (m.x < -120) m.x = W + 80;
@@ -146,10 +225,13 @@ function frame(t) {
     const img = leafImgs[m.imgIdx];
     if (!img || !img.complete) continue;
     ctx.save();
-    ctx.globalAlpha = m.opacity * m.depth;
+    // Opacity pulses slightly on beat
+    const opacityPulse = m.opacity + leafBeat * 0.22 * (1 - m.opacity);
+    ctx.globalAlpha = Math.min(opacityPulse * m.depth, 1);
     ctx.translate(m.x, m.y);
     ctx.rotate(m.rot);
-    ctx.scale(m.flip, 1);
+    // Scale pulse: leaves briefly enlarge on beat drop
+    ctx.scale(m.flip * scaleBoost, scaleBoost);
     // soft shadow only on desktop for perf
     if (!isMobile()) {
       ctx.shadowColor = "rgba(0,0,0,0.18)";
@@ -176,11 +258,13 @@ function shuffleTrack(auto = false) {
 }
 shuffleBtn.addEventListener('click', () => shuffleTrack(true));
 
-// mute
+// mute — also resume AudioContext if it was suspended before first gesture
 muteBtn.addEventListener('click', () => {
   isMuted = !isMuted;
   themeAudio.muted = isMuted;
   muteText.textContent = isMuted ? "unmute" : "mute theme";
+  // If user hits mute before drop, kick the AudioContext alive
+  if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
 });
 
 // DROP - FIXED: circle MUST originate from button center
@@ -205,7 +289,24 @@ function doDrop(e) {
   // ensure aesthetic is at top (scroll 0) before measuring clip
   aestheticRoot.scrollTop = 0;
 
-  try { themeAudio.play().catch(() => { }) } catch (_e) { }
+  // Start audio playback first so the tracks are initialized and active before we capture the stream.
+  const playPromise = themeAudio.play();
+
+  const setupAnalyser = () => {
+    initAudioAnalyser();
+    if (audioCtx && audioCtx.state === 'suspended') {
+      audioCtx.resume().catch(() => {});
+    }
+  };
+
+  if (playPromise && typeof playPromise.then === 'function') {
+    playPromise.then(setupAnalyser).catch((err) => {
+      console.warn("themeAudio playback blocked or failed:", err);
+      setupAnalyser();
+    });
+  } else {
+    setupAnalyser();
+  }
 
   // 1. RESET to 0 circle EXACTLY at button - no transition
   aestheticRoot.style.transition = 'none';
