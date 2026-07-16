@@ -203,8 +203,6 @@
       clip-path: circle(0px at var(--cx) var(--cy));
       -webkit-clip-path: circle(0px at var(--cx) var(--cy));
       will-change: clip-path;
-      transform: translateZ(0);
-      backface-visibility: hidden;
       display: block;
       overscroll-behavior: contain;
     }
@@ -231,7 +229,6 @@
       background-size: cover;
       background-position: center;
       filter: brightness(0.38) saturate(0.9);
-      transform: translateZ(0);
     }
 
     .bg-layer::after {
