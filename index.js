@@ -17,7 +17,7 @@ const LINKS = [
     const dropBtn = document.getElementById('drop');
     const waveRing = document.getElementById('wave-ring');
     const canvas = document.getElementById('leaves-canvas');
-    const ctx = canvas.getContext('2d', { alpha: true, desynchronized: true });
+    const ctx = canvas.getContext('2d', { alpha: true });
     const linksGrid = document.getElementById('links-grid');
     const spotifyFrame = document.getElementById('spotify-frame');
     const trackMeta = document.getElementById('track-meta');
@@ -50,7 +50,7 @@ const LINKS = [
     });
 
     // FIX: Use stable dimensions, handle Chrome address bar hide/show without flicker
-    let W = innerWidth, H = innerHeight, DPR = 1;
+    let W = 0, H = 0, DPR = 1;
     function getViewportHeight() {
       // visualViewport is more stable on Chrome mobile
       return window.visualViewport ? window.visualViewport.height : innerHeight;
@@ -59,8 +59,12 @@ const LINKS = [
       const newW = innerWidth;
       // On mobile, use the largest height (lvh) to avoid resize flicker when URL bar hides
       const newH = window.innerWidth < 768 ? Math.max(innerHeight, document.documentElement.clientHeight, getViewportHeight()) : innerHeight;
-      W = newW; H = newH;
-      DPR = (newW < 768) ? 1 : Math.min(devicePixelRatio || 1, 2);
+      const newDPR = (newW < 768) ? 1 : Math.min(devicePixelRatio || 1, 2);
+
+      // Only perform heavy canvas dimension resizing if size or scale actually changed
+      if (W === newW && H === newH && DPR === newDPR) return;
+
+      W = newW; H = newH; DPR = newDPR;
       canvas.width = W * DPR; canvas.height = H * DPR;
       canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
       ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
