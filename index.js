@@ -111,9 +111,16 @@ function getViewportHeight() {
 
 function resizeCanvas() {
   const newW = innerWidth;
-  const newH = newW < 768
-    ? Math.max(innerHeight, document.documentElement.clientHeight, getViewportHeight())
-    : innerHeight;
+  let newH = innerHeight;
+  if (newW < 768) {
+    if (window.screen && window.screen.height && window.screen.width) {
+      newH = innerHeight > innerWidth
+        ? Math.max(window.screen.width, window.screen.height)
+        : Math.min(window.screen.width, window.screen.height);
+    } else {
+      newH = Math.max(innerHeight, document.documentElement.clientHeight, getViewportHeight());
+    }
+  }
   const newDPR = newW < 768 ? 1 : Math.min(devicePixelRatio || 1, 2);
 
   if (W === newW && H === newH && DPR === newDPR) return false;

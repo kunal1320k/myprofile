@@ -240,7 +240,8 @@ body.aesthetic {
     #tree-canvas,
 #leaves-canvas {
   position: fixed;
-  inset: 0;
+  top: 0;
+  left: 0;
   pointer-events: none;
   contain: layout paint;
   opacity: 0;
