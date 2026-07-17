@@ -32,67 +32,22 @@ let revealed = false;
 let isMuted = false;
 let isRevealing = false; // FIX: blocks rebuild during clip wipe
 
-// ── AUDIO ANALYSER (beat-reactive leaves) ─────────────────────────────────
-let audioCtx = null;
-let analyser = null;
-let freqData = null;
-let beatEnergy = 0;      // smoothed low-freq energy  0..1
-let beatPeak  = 0;       // peak tracker for normalisation
-let beatSmooth = 0;      // extra-smooth value for gentle sway
+// ── SEEDED RANDOM GENERATOR FOR TREE RESIZING ──────────────────────────────
+let randomSource = Math.random;
+const treeSeed = Math.random() * 0xffffffff;
 
-function initAudioAnalyser() {
-  if (audioCtx) return;
-
-  // Local file:// protocol blocks Web Audio media element readers due to CORS security policies.
-  // We disable the analyser locally under file:// so the song can play directly through the element.
-  if (window.location.protocol === 'file:') {
-    console.warn(
-      '🍂 Beat-reactive leaves are disabled locally under file:// due to browser CORS security restrictions.\n' +
-      'To test the beat interaction locally, please run a local server (e.g. "python -m http.server 8000") or upload to GitHub Pages!'
-    );
-    return;
-  }
-
-  try {
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    analyser = audioCtx.createAnalyser();
-    analyser.fftSize = 256;
-    analyser.smoothingTimeConstant = 0.75;
-    freqData = new Uint8Array(analyser.frequencyBinCount);
-
-    // Standard media element source (fully supported across Chrome, Firefox, Safari)
-    const src = audioCtx.createMediaElementSource(themeAudio);
-    src.connect(analyser);
-    analyser.connect(audioCtx.destination);
-  } catch (err) {
-    console.warn('Audio analyser failed to initialize:', err);
-    audioCtx = null;
-    analyser = null;
-    freqData = null;
+function mulberry32(a) {
+  return function() {
+    let t = a += 0x6D2B79F5;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   }
 }
 
-function updateBeat() {
-  if (!analyser || !freqData) {
-    beatEnergy = 0;
-    beatSmooth = 0;
-    return;
-  }
-  analyser.getByteFrequencyData(freqData);
-  // Sum the first ~8 bins (bass ~20-300 Hz at 44100/256 ≈ 172 Hz/bin)
-  let sum = 0;
-  const bassBins = Math.min(8, freqData.length);
-  for (let i = 0; i < bassBins; i++) sum += freqData[i];
-  const raw = sum / (bassBins * 255); // 0..1
-
-  // Dynamic peak normalisation
-  beatPeak = Math.max(beatPeak * 0.9985, raw);
-  const normalised = beatPeak > 0.02 ? Math.min(raw / beatPeak, 1) : raw;
-
-  // Two smoothed values: snappy for burst, slow for ambient sway
-  beatEnergy = beatEnergy * 0.55 + normalised * 0.45; // fast
-  beatSmooth = beatSmooth * 0.88 + normalised * 0.12; // slow ambient
-}
+// ── AUDIO ANALYSER (beat-reactive leaves disabled) ─────────────────────────
+const beatEnergy = 0;
+const beatSmooth = 0;
 
 // render links
 LINKS.forEach(l => {
@@ -185,7 +140,7 @@ function resizeCanvas() {
 }
 
 function randomBetween(min, max) {
-  return min + Math.random() * (max - min);
+  return min + randomSource() * (max - min);
 }
 
 function jitterPoint(x, y, xAmount, yAmount) {
@@ -244,6 +199,7 @@ function branchProgress(branch, sceneProgress) {
 }
 
 function buildTree() {
+  randomSource = mulberry32(treeSeed);
   treeBranches = [];
   treeLeafSites = [];
   foliageBuffer = null;
@@ -334,18 +290,18 @@ function buildTree() {
   const leafCount = isMobile() ? 520 : 900;
   const sizeBase = clamp(minSide * (isMobile() ? 0.019 : 0.017), 6, 16);
   for (let i = 0; i < leafCount; i++) {
-    const branch = foliageBranches[Math.floor(Math.random() * foliageBranches.length)];
+    const branch = foliageBranches[Math.floor(randomSource() * foliageBranches.length)];
     const branchPosition = randomBetween(0.28, 0.98);
     const anchor = pointOnBranch(branch, branchPosition);
     const angle = randomBetween(0, Math.PI * 2);
-    const distance = treeFoliageRadius * (0.12 + Math.pow(Math.random(), 0.62) * 0.82);
+    const distance = treeFoliageRadius * (0.12 + Math.pow(randomSource(), 0.62) * 0.82);
     treeLeafSites.push({
       x: anchor.x + Math.cos(angle) * distance,
       y: anchor.y + Math.sin(angle) * distance * 0.62,
       size: sizeBase * randomBetween(0.46, 1.62),
       rot: randomBetween(-Math.PI, Math.PI),
-      flip: Math.random() > 0.5 ? 1 : -1,
-      imgIdx: Math.floor(Math.random() * leafImgs.length),
+      flip: randomSource() > 0.5 ? 1 : -1,
+      imgIdx: Math.floor(randomSource() * leafImgs.length),
       opacity: randomBetween(0.46, 0.88),
       reveal: clamp(
         branch.revealStart + (branch.revealEnd - branch.revealStart) * branchPosition + randomBetween(0.01, 0.07),
@@ -358,6 +314,7 @@ function buildTree() {
   treeDuration = clamp(Math.round(Math.hypot(W, H) * 27), 18000, 34000);
   treeLastDrawn = -1;
   if (imagesLoaded === leafSrcs.length) buildFoliageBuffer();
+  randomSource = Math.random;
 }
 
 function buildFoliageBuffer() {
@@ -556,7 +513,6 @@ function frame(t) {
     const dt = Math.min((t - lastT) / 16.666, 3);
     lastT = t;
     lastLeafRender = t;
-    updateBeat();
     drawLeaves(dt, t);
   }
 
@@ -772,13 +728,11 @@ function shuffleTrack(auto = false) {
 }
 shuffleBtn.addEventListener('click', () => shuffleTrack(true));
 
-// mute — also resume AudioContext if it was suspended before first gesture
+// mute
 muteBtn.addEventListener('click', () => {
   isMuted = !isMuted;
   themeAudio.muted = isMuted;
   muteText.textContent = isMuted ? "unmute" : "mute theme";
-  // If user hits mute before drop, kick the AudioContext alive
-  if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
 });
 
 // DROP - FIXED: circle MUST originate from button center
@@ -804,25 +758,12 @@ function doDrop(e) {
   // ensure aesthetic is at top (scroll 0) before measuring clip
   aestheticRoot.scrollTop = 0;
 
-  // Build and resume the analyser inside the user gesture, before playback begins.
-  // This keeps the beat-reactive leaf physics reliable on mobile browsers.
-  const setupAnalyser = () => {
-    initAudioAnalyser();
-    if (audioCtx && audioCtx.state === 'suspended') {
-      audioCtx.resume().catch(() => {});
-    }
-  };
-  setupAnalyser();
-
   const playPromise = themeAudio.play();
 
   if (playPromise && typeof playPromise.then === 'function') {
-    playPromise.then(setupAnalyser).catch((err) => {
+    playPromise.catch((err) => {
       console.warn("themeAudio playback blocked or failed:", err);
-      setupAnalyser();
     });
-  } else {
-    setupAnalyser();
   }
 
   // 1. RESET to 0 circle EXACTLY at button - no transition
