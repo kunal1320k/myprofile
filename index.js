@@ -805,7 +805,19 @@ function renderSpotifyUI(state) {
       if (state.songUrl) trackTitle.href = state.songUrl;
     }
     if (trackArtist) trackArtist.textContent = state.artist || "Spotify";
-    if (trackArt && state.albumArt) trackArt.src = state.albumArt;
+    if (trackArt) {
+      const isPlaceholder = !state.albumArt || state.albumArt.includes("2a96cbd8b46e442fc41c2b86b821562f") || state.albumArt.includes("default_album");
+      if (!isPlaceholder) {
+        trackArt.src = state.albumArt;
+      } else {
+        fetchArtworkAndDuration(state.title, state.artist).then(meta => {
+          if (meta.artwork && trackArt) {
+            trackArt.src = meta.artwork;
+            state.albumArt = meta.artwork;
+          }
+        });
+      }
+    }
     if (spotifyListenLink && state.songUrl) {
       spotifyListenLink.href = state.songUrl;
       const listenText = document.getElementById('spotify-listen-text');
@@ -1292,18 +1304,24 @@ async function fetchArtworkAndDuration(title, artist) {
   const cleanArtist = artist ? artist.split(/[;•,]/)[0].trim() : "";
 
   try {
+    // 1. Try search with title + artist
     const term = `${cleanTitle} ${cleanArtist}`;
-    const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(term)}&entity=song&limit=1`);
-    if (res.ok) {
-      const data = await res.json();
-      if (data && data.resultCount > 0 && data.results[0]) {
-        const item = data.results[0];
-        let artwork = item.artworkUrl100 ? item.artworkUrl100.replace('100x100bb', '600x600bb') : "";
-        const durationMs = item.trackTimeMillis || 0;
-        const result = { artwork, durationMs };
-        artworkCache.set(cacheKey, result);
-        return result;
-      }
+    let res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(term)}&entity=song&limit=1`);
+    let data = res.ok ? await res.json() : null;
+
+    // 2. If no result, try search with title only
+    if (!data || data.resultCount === 0) {
+      res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(cleanTitle)}&entity=song&limit=1`);
+      data = res.ok ? await res.json() : null;
+    }
+
+    if (data && data.resultCount > 0 && data.results[0]) {
+      const item = data.results[0];
+      let artwork = item.artworkUrl100 ? item.artworkUrl100.replace('100x100bb', '600x600bb') : "";
+      const durationMs = item.trackTimeMillis || 0;
+      const result = { artwork, durationMs };
+      artworkCache.set(cacheKey, result);
+      return result;
     }
   } catch (e) {
     console.warn("iTunes artwork search error:", e);
