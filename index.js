@@ -897,7 +897,7 @@ function renderSpotifyUI(state) {
     if (rawSpotifyText) rawSpotifyText.textContent = "[ playing nothing ]";
 
     if (lyricsScroll) {
-      lyricsScroll.innerHTML = '<p class="lyric-line-placeholder">♫ dont have lyrics rn... go play some bangers on spotify 🎧</p>';
+      lyricsScroll.innerHTML = '<p class="lyric-line-placeholder">no track playing right now — start listening on spotify or yt music</p>';
     }
     if (lyricsStatusBadge) lyricsStatusBadge.textContent = "offline";
     if (rawLyricItem) rawLyricItem.style.display = "none";
@@ -1042,13 +1042,13 @@ async function fetchSyncedLyrics(title, artist, durationMs) {
       if (lyricsStatusBadge) lyricsStatusBadge.textContent = "plain text";
     } else {
       if (lyricsScroll) {
-        lyricsScroll.innerHTML = '<p class="lyric-line-placeholder">♫ couldn\'t find lyrics for this one... just hum along and vibe 🎶</p>';
+        lyricsScroll.innerHTML = '<p class="lyric-line-placeholder">no lyrics found for this track</p>';
       }
       if (lyricsStatusBadge) lyricsStatusBadge.textContent = "no lyrics";
     }
   } catch (err) {
     if (lyricsScroll) {
-      lyricsScroll.innerHTML = '<p class="lyric-line-placeholder">♫ no lyrics found... just pretend you know the words 🤫</p>';
+      lyricsScroll.innerHTML = '<p class="lyric-line-placeholder">lyrics temporarily unavailable</p>';
     }
     if (lyricsStatusBadge) lyricsStatusBadge.textContent = "no lyrics";
   }
@@ -1314,7 +1314,7 @@ function fallbackCount() {
 if (toggleLyricsBtn) {
   toggleLyricsBtn.addEventListener('click', () => {
     const isCollapsed = lyricsContainer.classList.toggle('collapsed');
-    toggleLyricsText.textContent = isCollapsed ? "🎤 lyrics" : "✕ hide lyrics";
+    toggleLyricsText.textContent = isCollapsed ? "lyrics" : "hide lyrics";
   });
 }
 
@@ -1322,7 +1322,7 @@ if (toggleLyricsBtn) {
 if (toggleEmbedBtn) {
   toggleEmbedBtn.addEventListener('click', () => {
     const isCollapsed = embedContainer.classList.toggle('collapsed');
-    toggleEmbedText.textContent = isCollapsed ? "view playlist embed" : "hide playlist embed";
+    toggleEmbedText.textContent = isCollapsed ? "playlist" : "hide embed";
   });
 }
 
@@ -1460,7 +1460,10 @@ async function fetchLastFmNowPlaying() {
 // Sync button
 if (shuffleBtn) {
   shuffleBtn.addEventListener('click', () => {
-    shuffleBtn.textContent = "↻ syncing...";
+    const syncText = document.getElementById('sync-text');
+    const syncIcon = document.getElementById('sync-icon');
+    if (syncText) syncText.textContent = "syncing...";
+    if (syncIcon) syncIcon.style.animation = "spin 0.7s linear";
     fetchLastFmNowPlaying();
     if (SPOTIFY_CONFIG.apiEndpoint) {
       pollCustomEndpoint();
@@ -1468,7 +1471,8 @@ if (shuffleBtn) {
       fetchLanyardRest();
     }
     setTimeout(() => {
-      shuffleBtn.textContent = "↻ sync";
+      if (syncText) syncText.textContent = "sync";
+      if (syncIcon) syncIcon.style.animation = "";
     }, 700);
   });
 }
@@ -1478,6 +1482,12 @@ muteBtn.addEventListener('click', () => {
   isMuted = !isMuted;
   themeAudio.muted = isMuted;
   muteText.textContent = isMuted ? "unmute" : "mute theme";
+  const muteIcon = document.getElementById('mute-icon');
+  if (muteIcon) {
+    muteIcon.innerHTML = isMuted
+      ? `<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line>`
+      : `<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>`;
+  }
 });
 
 // Initialize on page load

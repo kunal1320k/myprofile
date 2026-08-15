@@ -540,6 +540,11 @@ body.aesthetic {
       50% { opacity: 1; transform: scale(1.3); }
     }
 
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
     /* MUSIC DOCK & SPOTIFY CARD */
     .music-dock {
       max-width: 520px;
