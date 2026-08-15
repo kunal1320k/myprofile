@@ -123,6 +123,17 @@
               </div>
             </div>
 
+            <!-- Live Synced Lyrics Box -->
+            <div class="lyrics-container collapsed" id="lyrics-container">
+              <div class="lyrics-top-bar">
+                <span class="lyrics-header-tag">✦ synced lyrics</span>
+                <span class="lyrics-status-badge" id="lyrics-status-badge">live</span>
+              </div>
+              <div class="lyrics-scroll" id="lyrics-scroll">
+                <p class="lyric-line-placeholder">loading live lyrics...</p>
+              </div>
+            </div>
+
             <!-- Card Bottom Controls -->
             <div class="spotify-card-bottom">
               <div class="action-buttons-left">
@@ -132,6 +143,9 @@
                   </svg>
                   <span id="spotify-listen-text">open track</span>
                 </a>
+                <button id="toggle-lyrics-btn" class="spotify-btn secondary-btn" type="button">
+                  <span id="toggle-lyrics-text">🎤 lyrics</span>
+                </button>
                 <button id="toggle-embed-btn" class="spotify-btn secondary-btn" type="button">
                   <span id="toggle-embed-text">view playlist embed</span>
                 </button>

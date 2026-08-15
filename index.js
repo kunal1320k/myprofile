@@ -66,6 +66,13 @@ const timeTotal = document.getElementById('time-total');
 const spotifyListenLink = document.getElementById('spotify-listen-link');
 const toggleEmbedBtn = document.getElementById('toggle-embed-btn');
 const toggleEmbedText = document.getElementById('toggle-embed-text');
+const toggleLyricsBtn = document.getElementById('toggle-lyrics-btn');
+const toggleLyricsText = document.getElementById('toggle-lyrics-text');
+const lyricsContainer = document.getElementById('lyrics-container');
+const lyricsScroll = document.getElementById('lyrics-scroll');
+const lyricsStatusBadge = document.getElementById('lyrics-status-badge');
+const rawLyricItem = document.getElementById('raw-lyric-item');
+const rawLyricText = document.getElementById('raw-lyric-text');
 const embedContainer = document.getElementById('embed-container');
 const rawViewsCount = document.getElementById('raw-views-count');
 const rawSpotifyText = document.getElementById('raw-spotify-text');
@@ -819,6 +826,11 @@ function renderSpotifyUI(state) {
     if (rawSpotifyText) rawSpotifyText.textContent = "autumn mix";
   }
 
+  // Fetch live lyrics for currently playing track
+  if (state.title) {
+    fetchSyncedLyrics(state.title, state.artist, state.durationMs);
+  }
+
   updateProgressBar();
 }
 
@@ -840,6 +852,157 @@ function updateProgressBar() {
   if (progressBarFill) progressBarFill.style.width = `${percent}%`;
   if (timeCurrent) timeCurrent.textContent = formatMs(progress);
   if (timeTotal) timeTotal.textContent = formatMs(currentPlaybackState.durationMs);
+
+  // Sync active lyric line in real-time
+  syncActiveLyric(progress);
+}
+
+// ── LIVE SYNCED LYRICS ENGINE (LRCLIB) ────────────────────────────────────
+let currentLyrics = [];
+let currentLyricsTrackKey = "";
+let currentActiveLyricIndex = -1;
+
+function parseLRC(lrc) {
+  if (!lrc) return [];
+  const lines = lrc.split('\n');
+  const result = [];
+  const timeRegex = /\[(\d{2}):(\d{2})(?:\.(\d{2,3}))?\](.*)/;
+
+  for (const line of lines) {
+    const match = line.match(timeRegex);
+    if (match) {
+      const minutes = parseInt(match[1], 10);
+      const seconds = parseInt(match[2], 10);
+      const millis = match[3] ? parseInt(match[3].padEnd(3, '0').slice(0, 3), 10) : 0;
+      const timeMs = (minutes * 60 + seconds) * 1000 + millis;
+      const text = match[4].trim();
+      if (text) {
+        result.push({ timeMs, text });
+      }
+    }
+  }
+  return result.sort((a, b) => a.timeMs - b.timeMs);
+}
+
+async function fetchSyncedLyrics(title, artist, durationMs) {
+  if (!title) return;
+  const trackKey = `${title}_${artist}`.toLowerCase();
+  if (currentLyricsTrackKey === trackKey && currentLyrics.length > 0) return;
+  currentLyricsTrackKey = trackKey;
+  currentLyrics = [];
+  currentActiveLyricIndex = -1;
+
+  if (lyricsScroll) {
+    lyricsScroll.innerHTML = '<p class="lyric-line-placeholder">searching for live lyrics...</p>';
+  }
+  if (lyricsStatusBadge) lyricsStatusBadge.textContent = "fetching";
+
+  const cleanTitle = title
+    .replace(/\s*\(feat\..*?\)/i, '')
+    .replace(/\s*\[feat\..*?\]/i, '')
+    .replace(/\s*-\s*.*version.*/i, '')
+    .replace(/\s*-\s*.*remaster.*/i, '')
+    .trim();
+  const cleanArtist = artist ? artist.split('•')[0].split(',')[0].trim() : "";
+
+  try {
+    let url = `https://lrclib.net/api/get?track_name=${encodeURIComponent(cleanTitle)}&artist_name=${encodeURIComponent(cleanArtist)}`;
+    if (durationMs) {
+      url += `&duration=${Math.round(durationMs / 1000)}`;
+    }
+    let res = await fetch(url);
+    let data = null;
+
+    if (res.ok) {
+      data = await res.json();
+    } else {
+      const searchRes = await fetch(`https://lrclib.net/api/search?q=${encodeURIComponent(cleanTitle + ' ' + cleanArtist)}`);
+      if (searchRes.ok) {
+        const searchList = await searchRes.json();
+        if (searchList && searchList.length > 0) {
+          data = searchList.find(item => item.syncedLyrics) || searchList[0];
+        }
+      }
+    }
+
+    if (data && data.syncedLyrics) {
+      currentLyrics = parseLRC(data.syncedLyrics);
+      renderLyricsLines(currentLyrics);
+      if (lyricsStatusBadge) lyricsStatusBadge.textContent = "synced";
+    } else if (data && data.plainLyrics) {
+      currentLyrics = data.plainLyrics.split('\n').filter(t => t.trim()).map(t => ({ timeMs: 0, text: t.trim() }));
+      renderLyricsLines(currentLyrics);
+      if (lyricsStatusBadge) lyricsStatusBadge.textContent = "plain text";
+    } else {
+      if (lyricsScroll) {
+        lyricsScroll.innerHTML = '<p class="lyric-line-placeholder">♫ instrumental / lyrics not found</p>';
+      }
+      if (lyricsStatusBadge) lyricsStatusBadge.textContent = "none";
+    }
+  } catch (err) {
+    if (lyricsScroll) {
+      lyricsScroll.innerHTML = '<p class="lyric-line-placeholder">♫ enjoy the autumn breeze</p>';
+    }
+    if (lyricsStatusBadge) lyricsStatusBadge.textContent = "offline";
+  }
+}
+
+function renderLyricsLines(lyrics) {
+  if (!lyricsScroll) return;
+  lyricsScroll.innerHTML = "";
+  if (lyrics.length === 0) {
+    lyricsScroll.innerHTML = '<p class="lyric-line-placeholder">no lyrics available</p>';
+    return;
+  }
+
+  lyrics.forEach((line, idx) => {
+    const p = document.createElement('p');
+    p.className = 'lyric-line';
+    p.dataset.index = idx;
+    p.dataset.time = line.timeMs;
+    p.textContent = line.text;
+    p.addEventListener('click', () => {
+      highlightLyricIndex(idx);
+    });
+    lyricsScroll.appendChild(p);
+  });
+}
+
+function highlightLyricIndex(idx) {
+  currentActiveLyricIndex = idx;
+  const lines = lyricsScroll.querySelectorAll('.lyric-line');
+  lines.forEach((l, i) => {
+    if (i === idx) {
+      l.className = 'lyric-line active';
+      l.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (i < idx) {
+      l.className = 'lyric-line past';
+    } else {
+      l.className = 'lyric-line';
+    }
+  });
+
+  if (rawLyricText && currentLyrics[idx]) {
+    rawLyricText.textContent = currentLyrics[idx].text;
+    if (rawLyricItem) rawLyricItem.style.display = "flex";
+  }
+}
+
+function syncActiveLyric(progressMs) {
+  if (!currentLyrics || currentLyrics.length === 0 || !lyricsScroll) return;
+
+  let activeIdx = -1;
+  for (let i = 0; i < currentLyrics.length; i++) {
+    if (currentLyrics[i].timeMs <= progressMs) {
+      activeIdx = i;
+    } else {
+      break;
+    }
+  }
+
+  if (activeIdx !== currentActiveLyricIndex && activeIdx !== -1) {
+    highlightLyricIndex(activeIdx);
+  }
 }
 
 // Update progress bar every second when live
@@ -1024,6 +1187,14 @@ function animateCount(target) {
 function fallbackCount() {
   if (rawViewsCount) rawViewsCount.textContent = "1";
   if (visitorCount) visitorCount.textContent = "✦ 1 unique wanderer";
+}
+
+// Toggle lyrics accordion
+if (toggleLyricsBtn) {
+  toggleLyricsBtn.addEventListener('click', () => {
+    const isCollapsed = lyricsContainer.classList.toggle('collapsed');
+    toggleLyricsText.textContent = isCollapsed ? "🎤 lyrics" : "✕ hide lyrics";
+  });
 }
 
 // Toggle embed playlist
