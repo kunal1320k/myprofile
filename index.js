@@ -1275,6 +1275,42 @@ if (toggleEmbedBtn) {
 let lastFmTrackStartTime = 0;
 let lastFmCurrentTrackKey = "";
 let lanyardSocketActive = false;
+const artworkCache = new Map();
+
+async function fetchArtworkAndDuration(title, artist) {
+  const cacheKey = `${title}_${artist}`.toLowerCase();
+  if (artworkCache.has(cacheKey)) return artworkCache.get(cacheKey);
+
+  const cleanTitle = title
+    .replace(/\s*\(feat\..*?\)/i, '')
+    .replace(/\s*\[feat\..*?\]/i, '')
+    .replace(/\s*\(from.*?\)/i, '')
+    .replace(/\s*-\s*.*from.*/i, '')
+    .replace(/\s*-\s*.*version.*/i, '')
+    .replace(/\s*-\s*.*remaster.*/i, '')
+    .trim();
+  const cleanArtist = artist ? artist.split(/[;•,]/)[0].trim() : "";
+
+  try {
+    const term = `${cleanTitle} ${cleanArtist}`;
+    const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(term)}&entity=song&limit=1`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.resultCount > 0 && data.results[0]) {
+        const item = data.results[0];
+        let artwork = item.artworkUrl100 ? item.artworkUrl100.replace('100x100bb', '600x600bb') : "";
+        const durationMs = item.trackTimeMillis || 0;
+        const result = { artwork, durationMs };
+        artworkCache.set(cacheKey, result);
+        return result;
+      }
+    }
+  } catch (e) {
+    console.warn("iTunes artwork search error:", e);
+  }
+
+  return { artwork: "", durationMs: 0 };
+}
 
 async function fetchLastFmNowPlaying() {
   if (!SPOTIFY_CONFIG.lastfm || !SPOTIFY_CONFIG.lastfm.username || !SPOTIFY_CONFIG.lastfm.apiKey) return;
@@ -1296,9 +1332,11 @@ async function fetchLastFmNowPlaying() {
         let albumArt = "";
         if (currentTrack.image && Array.isArray(currentTrack.image)) {
           const img = currentTrack.image.find(i => i.size === "extralarge") || currentTrack.image.find(i => i.size === "large") || currentTrack.image[currentTrack.image.length - 1];
-          if (img && img['#text']) albumArt = img['#text'];
+          // Check if image is valid and not Last.fm generic star placeholder
+          if (img && img['#text'] && !img['#text'].includes("2a96cbd8b46e442fc41c2b86b821562f")) {
+            albumArt = img['#text'];
+          }
         }
-        if (!albumArt) albumArt = SPOTIFY_CONFIG.playlist.albumArt;
 
         const trackKey = `${title}_${artist}`.toLowerCase();
         if (trackKey !== lastFmCurrentTrackKey) {
@@ -1309,6 +1347,15 @@ async function fetchLastFmNowPlaying() {
         const songUrl = currentTrack.url || `https://open.spotify.com/search/${encodeURIComponent(title + ' ' + artist)}`;
         const elapsedMs = Math.max(0, Date.now() - lastFmTrackStartTime);
 
+        // If Last.fm had no image or a placeholder, fetch high-res artwork & duration from iTunes
+        if (!albumArt) {
+          const meta = await fetchArtworkAndDuration(title, artist);
+          if (meta.artwork) albumArt = meta.artwork;
+          if (meta.durationMs) currentPlaybackState.durationMs = meta.durationMs;
+        }
+
+        if (!albumArt) albumArt = SPOTIFY_CONFIG.playlist.albumArt;
+
         currentPlaybackState = {
           isPlaying: true,
           title: title,
@@ -1316,7 +1363,7 @@ async function fetchLastFmNowPlaying() {
           albumArt: albumArt,
           songUrl: songUrl,
           progressMs: elapsedMs,
-          durationMs: currentPlaybackState.title === title && currentPlaybackState.durationMs > 0 ? currentPlaybackState.durationMs : 210000,
+          durationMs: currentPlaybackState.durationMs > 0 ? currentPlaybackState.durationMs : 210000,
           updatedAt: Date.now()
         };
 
