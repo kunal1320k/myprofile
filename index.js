@@ -807,7 +807,7 @@ function renderSpotifyUI(state) {
     if (statusMsg) statusMsg.textContent = "Listening on Spotify";
     if (statusDot && statusDot.parentElement) statusDot.parentElement.className = "track-status-line";
     if (equalizer) equalizer.classList.add("active");
-    if (rawSpotifyText) rawSpotifyText.textContent = `live: ${state.title} — ${state.artist}`;
+    if (rawSpotifyText) rawSpotifyText.textContent = `${state.title} — ${state.artist}`;
   } else {
     if (livePill) {
       livePill.className = "live-pill playlist";
@@ -816,7 +816,7 @@ function renderSpotifyUI(state) {
     if (statusMsg) statusMsg.textContent = "Autumn Mix • Playlist";
     if (statusDot && statusDot.parentElement) statusDot.parentElement.className = "track-status-line playlist";
     if (equalizer) equalizer.classList.remove("active");
-    if (rawSpotifyText) rawSpotifyText.textContent = `playlist: autumn mix (${SPOTIFY_CONFIG.playlistId})`;
+    if (rawSpotifyText) rawSpotifyText.textContent = "autumn mix";
   }
 
   updateProgressBar();

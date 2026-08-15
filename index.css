@@ -109,27 +109,26 @@ body.aesthetic {
 
     .raw-meta {
       display: flex;
-      flex-wrap: wrap;
-      gap: 12px;
-      margin-top: 14px;
-      font-size: 13px;
-      font-family: "Courier New", Courier, monospace, "Times New Roman", Times, serif;
+      flex-direction: column;
+      gap: 6px;
+      margin-top: 18px;
+      font-size: 15px;
+      font-family: "Times New Roman", Times, serif;
+      color: #000;
     }
 
-    .raw-pill {
-      display: inline-flex;
+    .raw-item {
+      display: flex;
       align-items: center;
       gap: 6px;
-      color: #222;
-      background: #f4f4f4;
-      padding: 2px 8px;
-      border: 1px solid #ccc;
-      border-radius: 4px;
+      font-size: 15px;
+      font-family: "Times New Roman", Times, serif;
+      color: #000;
     }
 
     .raw-label {
-      color: #666;
-      font-weight: 600;
+      color: #000;
+      font-weight: normal;
     }
 
     .drop-wrap {
