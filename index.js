@@ -8,8 +8,32 @@ const LINKS = [
   { name: "steam", handle: "/ kunal1320k", url: "https://steamcommunity.com/id/kunal1320k/" },
   { name: "spotify", handle: "/ kunal1320k", url: "https://open.spotify.com/user/kunal1320k" },
 ];
-const PLAYLIST = "14d7SJJHjhwEerGgKaUa4J";
-const PLAYLIST_URL = "https://open.spotify.com/playlist/14d7SJJHjhwEerGgKaUa4J?si=xpg45s19Ty6RTb1aWdBUdQ";
+// ── SPOTIFY & USER CONFIGURATION ──────────────────────────────────────────
+const SPOTIFY_CONFIG = {
+  // Option 1: Discord ID for Lanyard real-time WebSocket / REST (Zero-server setup!)
+  // 1. Link Spotify in your Discord account (Settings -> Connections -> Display on status)
+  // 2. Join the Lanyard server: discord.gg/lanyard
+  // 3. Put your Discord User ID here:
+  discordId: "1085524274774802515",
+
+  // Option 2: Custom Serverless API Endpoint (from Vercel / Cloudflare Worker)
+  // Leave empty if using Lanyard or offline mode:
+  apiEndpoint: "", // e.g. "https://myprofile-spotify-api.vercel.app/api/spotify"
+
+  // Fallback playlist and track info
+  playlistId: "14d7SJJHjhwEerGgKaUa4J",
+  playlistUrl: "https://open.spotify.com/playlist/14d7SJJHjhwEerGgKaUa4J?si=xpg45s19Ty6RTb1aWdBUdQ",
+  defaultTrack: {
+    title: "Nothing New (feat. Phoebe Bridgers)",
+    artist: "Taylor Swift • Red (Taylor's Version)",
+    albumArt: "https://i.scdn.co/image/ab67616d0000b273318443aab3531a0558e79a4d",
+    songUrl: "https://open.spotify.com/playlist/14d7SJJHjhwEerGgKaUa4J",
+    durationMs: 258000
+  }
+};
+
+const PLAYLIST = SPOTIFY_CONFIG.playlistId;
+const PLAYLIST_URL = SPOTIFY_CONFIG.playlistUrl;
 
 const rawRoot = document.getElementById('raw-root');
 const aestheticRoot = document.getElementById('aesthetic-root');
@@ -22,11 +46,31 @@ const treeCtx = treeCanvas.getContext('2d', { alpha: true });
 const ctx = canvas.getContext('2d', { alpha: true });
 const linksGrid = document.getElementById('links-grid');
 const spotifyFrame = document.getElementById('spotify-frame');
-const trackMeta = document.getElementById('track-meta');
 const themeAudio = document.getElementById('theme-audio');
 const muteBtn = document.getElementById('mute-btn');
 const muteText = document.getElementById('mute-text');
 const shuffleBtn = document.getElementById('shuffle-btn');
+
+// Spotify & Visitor UI elements
+const trackArt = document.getElementById('track-art');
+const trackTitle = document.getElementById('track-title');
+const trackArtist = document.getElementById('track-artist');
+const statusMsg = document.getElementById('status-msg');
+const statusDot = document.getElementById('status-indicator-dot');
+const livePill = document.getElementById('spotify-live-pill');
+const liveStatusText = document.getElementById('live-status-text');
+const equalizer = document.getElementById('equalizer');
+const progressBarFill = document.getElementById('progress-bar-fill');
+const timeCurrent = document.getElementById('time-current');
+const timeTotal = document.getElementById('time-total');
+const spotifyListenLink = document.getElementById('spotify-listen-link');
+const toggleEmbedBtn = document.getElementById('toggle-embed-btn');
+const toggleEmbedText = document.getElementById('toggle-embed-text');
+const embedContainer = document.getElementById('embed-container');
+const rawViewsCount = document.getElementById('raw-views-count');
+const rawSpotifyText = document.getElementById('raw-spotify-text');
+const visitorCount = document.getElementById('visitor-count');
+const visitorPill = document.getElementById('visitor-pill');
 
 let revealed = false;
 let isMuted = false;
@@ -723,24 +767,297 @@ rafId = requestAnimationFrame(frame);
 
 */
 
-// MUSIC - NOW USES YOUR PLAYLIST ONLY
-function shuffleTrack(auto = false) {
-  // keep your playlist, don't switch to random tracks
-  const url = `https://open.spotify.com/embed/playlist/${PLAYLIST}?utm_source=generator` + (auto ? "&autoplay=1" : "");
-  // cache bust to force shuffle reload if needed
-  const bust = auto ? `&t=${Date.now()}` : "";
-  spotifyFrame.src = url + bust;
-  trackMeta.textContent = `your playlist — ${PLAYLIST} • playing`;
-  return PLAYLIST;
-}
-shuffleBtn.addEventListener('click', () => shuffleTrack(true));
+// ── SPOTIFY REAL-TIME TRACKING & VISITOR COUNTER ───────────────────────────
 
-// mute
+function formatMs(ms) {
+  if (!ms || isNaN(ms) || ms < 0) return "0:00";
+  const totalSeconds = Math.floor(ms / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+}
+
+let currentPlaybackState = {
+  isPlaying: false,
+  title: SPOTIFY_CONFIG.defaultTrack.title,
+  artist: SPOTIFY_CONFIG.defaultTrack.artist,
+  albumArt: SPOTIFY_CONFIG.defaultTrack.albumArt,
+  songUrl: SPOTIFY_CONFIG.defaultTrack.songUrl,
+  progressMs: 0,
+  durationMs: SPOTIFY_CONFIG.defaultTrack.durationMs,
+  updatedAt: Date.now()
+};
+
+function renderSpotifyUI(state) {
+  if (trackTitle) {
+    trackTitle.textContent = state.title || "Nothing Playing";
+    if (state.songUrl) trackTitle.href = state.songUrl;
+  }
+  if (trackArtist) trackArtist.textContent = state.artist || "Spotify";
+  if (trackArt && state.albumArt) trackArt.src = state.albumArt;
+  if (spotifyListenLink && state.songUrl) spotifyListenLink.href = state.songUrl;
+
+  const isLive = state.isPlaying;
+
+  if (isLive) {
+    if (livePill) {
+      livePill.className = "live-pill";
+      if (liveStatusText) liveStatusText.textContent = "live";
+    }
+    if (statusMsg) statusMsg.textContent = "Listening on Spotify";
+    if (statusDot && statusDot.parentElement) statusDot.parentElement.className = "track-status-line";
+    if (equalizer) equalizer.classList.add("active");
+    if (rawSpotifyText) rawSpotifyText.textContent = `live: ${state.title} — ${state.artist}`;
+  } else {
+    if (livePill) {
+      livePill.className = "live-pill playlist";
+      if (liveStatusText) liveStatusText.textContent = "mix";
+    }
+    if (statusMsg) statusMsg.textContent = "Autumn Mix • Playlist";
+    if (statusDot && statusDot.parentElement) statusDot.parentElement.className = "track-status-line playlist";
+    if (equalizer) equalizer.classList.remove("active");
+    if (rawSpotifyText) rawSpotifyText.textContent = `playlist: autumn mix (${SPOTIFY_CONFIG.playlistId})`;
+  }
+
+  updateProgressBar();
+}
+
+function updateProgressBar() {
+  if (!currentPlaybackState.durationMs || currentPlaybackState.durationMs <= 0) {
+    if (progressBarFill) progressBarFill.style.width = "0%";
+    if (timeCurrent) timeCurrent.textContent = "0:00";
+    if (timeTotal) timeTotal.textContent = "0:00";
+    return;
+  }
+
+  let progress = currentPlaybackState.progressMs;
+  if (currentPlaybackState.isPlaying) {
+    const elapsed = Date.now() - currentPlaybackState.updatedAt;
+    progress = Math.min(progress + elapsed, currentPlaybackState.durationMs);
+  }
+
+  const percent = Math.min(Math.max((progress / currentPlaybackState.durationMs) * 100, 0), 100);
+  if (progressBarFill) progressBarFill.style.width = `${percent}%`;
+  if (timeCurrent) timeCurrent.textContent = formatMs(progress);
+  if (timeTotal) timeTotal.textContent = formatMs(currentPlaybackState.durationMs);
+}
+
+// Update progress bar every second when live
+setInterval(() => {
+  if (currentPlaybackState.isPlaying) {
+    updateProgressBar();
+  }
+}, 1000);
+
+let lanyardSocket = null;
+let heartbeatTimer = null;
+
+function connectLanyard() {
+  if (!SPOTIFY_CONFIG.discordId || SPOTIFY_CONFIG.discordId === "YOUR_DISCORD_USER_ID") {
+    if (SPOTIFY_CONFIG.apiEndpoint) {
+      pollCustomEndpoint();
+      setInterval(pollCustomEndpoint, 6000);
+    } else {
+      renderSpotifyUI(currentPlaybackState);
+    }
+    return;
+  }
+
+  try {
+    lanyardSocket = new WebSocket("wss://api.lanyard.rest/socket");
+
+    lanyardSocket.onopen = () => {
+      lanyardSocket.send(JSON.stringify({
+        op: 2,
+        d: { subscribe_to_id: SPOTIFY_CONFIG.discordId }
+      }));
+    };
+
+    lanyardSocket.onmessage = (event) => {
+      try {
+        const payload = JSON.parse(event.data);
+        const { op, t, d } = payload;
+
+        if (op === 1) {
+          if (heartbeatTimer) clearInterval(heartbeatTimer);
+          heartbeatTimer = setInterval(() => {
+            if (lanyardSocket && lanyardSocket.readyState === WebSocket.OPEN) {
+              lanyardSocket.send(JSON.stringify({ op: 3 }));
+            }
+          }, d.heartbeat_interval);
+        }
+
+        if (t === "INIT_STATE" || t === "PRESENCE_UPDATE") {
+          handleLanyardData(d);
+        }
+      } catch (err) {
+        console.warn("Lanyard message error:", err);
+      }
+    };
+
+    lanyardSocket.onerror = () => {
+      fetchLanyardRest();
+    };
+
+    lanyardSocket.onclose = () => {
+      if (heartbeatTimer) clearInterval(heartbeatTimer);
+      setTimeout(connectLanyard, 5000);
+    };
+  } catch (e) {
+    fetchLanyardRest();
+  }
+}
+
+function handleLanyardData(data) {
+  if (data && data.listening_to_spotify && data.spotify) {
+    const s = data.spotify;
+    const duration = s.timestamps ? (s.timestamps.end - s.timestamps.start) : SPOTIFY_CONFIG.defaultTrack.durationMs;
+    const progress = s.timestamps ? Math.max(0, Date.now() - s.timestamps.start) : 0;
+
+    currentPlaybackState = {
+      isPlaying: true,
+      title: s.song,
+      artist: `${s.artist} • ${s.album || "Spotify"}`,
+      albumArt: s.album_art_url || SPOTIFY_CONFIG.defaultTrack.albumArt,
+      songUrl: s.track_id ? `https://open.spotify.com/track/${s.track_id}` : `https://open.spotify.com/search/${encodeURIComponent(s.song + ' ' + s.artist)}`,
+      progressMs: progress,
+      durationMs: duration,
+      updatedAt: Date.now()
+    };
+  } else {
+    currentPlaybackState = {
+      isPlaying: false,
+      title: SPOTIFY_CONFIG.defaultTrack.title,
+      artist: SPOTIFY_CONFIG.defaultTrack.artist,
+      albumArt: SPOTIFY_CONFIG.defaultTrack.albumArt,
+      songUrl: SPOTIFY_CONFIG.defaultTrack.songUrl,
+      progressMs: 0,
+      durationMs: SPOTIFY_CONFIG.defaultTrack.durationMs,
+      updatedAt: Date.now()
+    };
+  }
+
+  renderSpotifyUI(currentPlaybackState);
+}
+
+async function fetchLanyardRest() {
+  if (!SPOTIFY_CONFIG.discordId) return;
+  try {
+    const res = await fetch(`https://api.lanyard.rest/v1/users/${SPOTIFY_CONFIG.discordId}`);
+    if (res.ok) {
+      const json = await res.json();
+      if (json.success && json.data) {
+        handleLanyardData(json.data);
+      }
+    }
+  } catch (err) {
+    console.warn("Lanyard REST error:", err);
+  }
+}
+
+async function pollCustomEndpoint() {
+  if (!SPOTIFY_CONFIG.apiEndpoint) return;
+  try {
+    const res = await fetch(SPOTIFY_CONFIG.apiEndpoint);
+    if (res.ok) {
+      const data = await res.json();
+      if (data.title) {
+        currentPlaybackState = {
+          isPlaying: !!data.is_playing,
+          title: data.title,
+          artist: `${data.artist || "Spotify Artist"} • ${data.album || ""}`,
+          albumArt: data.album_art_url || SPOTIFY_CONFIG.defaultTrack.albumArt,
+          songUrl: data.song_url || SPOTIFY_CONFIG.defaultTrack.songUrl,
+          progressMs: data.progress_ms || 0,
+          durationMs: data.duration_ms || SPOTIFY_CONFIG.defaultTrack.durationMs,
+          updatedAt: Date.now()
+        };
+        renderSpotifyUI(currentPlaybackState);
+      }
+    }
+  } catch (e) {
+    console.warn("Custom Spotify API error:", e);
+  }
+}
+
+// ── VISITOR COUNTER ────────────────────────────────────────────────────────
+async function initVisitorCounter() {
+  const KEY = "kunal1320k_portfolio_visits";
+  const visitedSession = sessionStorage.getItem("kunal1320k_visited");
+  const action = visitedSession ? "get" : "hit";
+  const endpoint = `https://countapi.mileshilliard.com/api/v1/${action}/${KEY}`;
+
+  try {
+    const res = await fetch(endpoint);
+    if (res.ok) {
+      const data = await res.json();
+      const count = data.value || 1;
+      sessionStorage.setItem("kunal1320k_visited", "true");
+      animateCount(count);
+    } else {
+      fallbackCount();
+    }
+  } catch (e) {
+    fallbackCount();
+  }
+}
+
+function animateCount(target) {
+  const formatted = Number(target).toLocaleString();
+  if (rawViewsCount) rawViewsCount.textContent = formatted;
+  if (!visitorCount) return;
+
+  let current = 0;
+  const step = Math.max(1, Math.floor(target / 30));
+  const timer = setInterval(() => {
+    current += step;
+    if (current >= target) {
+      current = target;
+      clearInterval(timer);
+    }
+    visitorCount.textContent = `✦ ${current.toLocaleString()} wanderers visited`;
+  }, 30);
+}
+
+function fallbackCount() {
+  if (rawViewsCount) rawViewsCount.textContent = "1,320";
+  if (visitorCount) visitorCount.textContent = "✦ 1,320 wanderers visited";
+}
+
+// Toggle embed playlist
+if (toggleEmbedBtn) {
+  toggleEmbedBtn.addEventListener('click', () => {
+    const isCollapsed = embedContainer.classList.toggle('collapsed');
+    toggleEmbedText.textContent = isCollapsed ? "view playlist embed" : "hide playlist embed";
+  });
+}
+
+// Sync button
+if (shuffleBtn) {
+  shuffleBtn.addEventListener('click', () => {
+    shuffleBtn.textContent = "↻ syncing...";
+    if (SPOTIFY_CONFIG.apiEndpoint) {
+      pollCustomEndpoint();
+    } else {
+      fetchLanyardRest();
+    }
+    setTimeout(() => {
+      shuffleBtn.textContent = "↻ sync";
+    }, 700);
+  });
+}
+
+// Mute theme
 muteBtn.addEventListener('click', () => {
   isMuted = !isMuted;
   themeAudio.muted = isMuted;
   muteText.textContent = isMuted ? "unmute" : "mute theme";
 });
+
+// Initialize on page load
+initVisitorCounter();
+connectLanyard();
+renderSpotifyUI(currentPlaybackState);
 
 // DROP - FIXED: circle MUST originate from button center
 function getDropCenter() {
