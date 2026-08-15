@@ -980,11 +980,12 @@ async function pollCustomEndpoint() {
   }
 }
 
-// ── VISITOR COUNTER ────────────────────────────────────────────────────────
+// ── UNIQUE VISITOR COUNTER ──────────────────────────────────────────────────
 async function initVisitorCounter() {
-  const KEY = "kunal1320k_portfolio_visits";
-  const visitedSession = sessionStorage.getItem("kunal1320k_visited");
-  const action = visitedSession ? "get" : "hit";
+  const KEY = "kunal1320k_unique_wanderers";
+  // Check if this browser/device has ever visited before (persists permanently across tabs & sessions)
+  const isReturningVisitor = localStorage.getItem("kunal1320k_unique_visitor_v1");
+  const action = isReturningVisitor ? "get" : "hit";
   const endpoint = `https://countapi.mileshilliard.com/api/v1/${action}/${KEY}`;
 
   try {
@@ -992,7 +993,8 @@ async function initVisitorCounter() {
     if (res.ok) {
       const data = await res.json();
       const count = data.value || 1;
-      sessionStorage.setItem("kunal1320k_visited", "true");
+      // Mark permanently so this user is never counted more than once
+      localStorage.setItem("kunal1320k_unique_visitor_v1", "true");
       animateCount(count);
     } else {
       fallbackCount();
@@ -1015,13 +1017,13 @@ function animateCount(target) {
       current = target;
       clearInterval(timer);
     }
-    visitorCount.textContent = `✦ ${current.toLocaleString()} wanderers visited`;
+    visitorCount.textContent = `✦ ${current.toLocaleString()} unique wanderers`;
   }, 30);
 }
 
 function fallbackCount() {
-  if (rawViewsCount) rawViewsCount.textContent = "1,320";
-  if (visitorCount) visitorCount.textContent = "✦ 1,320 wanderers visited";
+  if (rawViewsCount) rawViewsCount.textContent = "1";
+  if (visitorCount) visitorCount.textContent = "✦ 1 unique wanderer";
 }
 
 // Toggle embed playlist
