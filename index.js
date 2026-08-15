@@ -11,29 +11,23 @@ const LINKS = [
 // ── SPOTIFY & USER CONFIGURATION ──────────────────────────────────────────
 const SPOTIFY_CONFIG = {
   // Option 1: Discord ID for Lanyard real-time WebSocket / REST (Zero-server setup!)
-  // 1. Link Spotify in your Discord account (Settings -> Connections -> Display on status)
-  // 2. Join the Lanyard server: discord.gg/lanyard
-  // 3. Put your Discord User ID here:
   discordId: "1085524274774802515",
 
   // Option 2: Custom Serverless API Endpoint (from Vercel / Cloudflare Worker)
-  // Leave empty if using Lanyard or offline mode:
   apiEndpoint: "", // e.g. "https://myprofile-spotify-api.vercel.app/api/spotify"
 
-  // Fallback playlist and track info
-  playlistId: "14d7SJJHjhwEerGgKaUa4J",
-  playlistUrl: "https://open.spotify.com/playlist/14d7SJJHjhwEerGgKaUa4J?si=xpg45s19Ty6RTb1aWdBUdQ",
-  defaultTrack: {
-    title: "Nothing New (feat. Phoebe Bridgers)",
-    artist: "Taylor Swift • Red (Taylor's Version)",
-    albumArt: "https://i.scdn.co/image/ab67616d0000b273318443aab3531a0558e79a4d",
-    songUrl: "https://open.spotify.com/playlist/14d7SJJHjhwEerGgKaUa4J",
-    durationMs: 258000
+  // kunal1320k's Spotify Playlist
+  playlist: {
+    id: "14d7SJJHjhwEerGgKaUa4J",
+    title: "angrexxxxi 🥟",
+    artist: "kunal1320k • playlist",
+    albumArt: "https://mosaic.scdn.co/640/ab67616d00001e028324db1ae37be249aed887e7ab67616d00001e02b1f8da74f225fa1225cdfaceab67616d00001e02c8e97cafeb2acb85b21a777eab67616d00001e02ef694f8a1e178963cf25c2b5",
+    url: "https://open.spotify.com/playlist/14d7SJJHjhwEerGgKaUa4J?si=xpg45s19Ty6RTb1aWdBUdQ"
   }
 };
 
-const PLAYLIST = SPOTIFY_CONFIG.playlistId;
-const PLAYLIST_URL = SPOTIFY_CONFIG.playlistUrl;
+const PLAYLIST = SPOTIFY_CONFIG.playlist.id;
+const PLAYLIST_URL = SPOTIFY_CONFIG.playlist.url;
 
 const rawRoot = document.getElementById('raw-root');
 const aestheticRoot = document.getElementById('aesthetic-root');
@@ -786,27 +780,31 @@ function formatMs(ms) {
 
 let currentPlaybackState = {
   isPlaying: false,
-  title: SPOTIFY_CONFIG.defaultTrack.title,
-  artist: SPOTIFY_CONFIG.defaultTrack.artist,
-  albumArt: SPOTIFY_CONFIG.defaultTrack.albumArt,
-  songUrl: SPOTIFY_CONFIG.defaultTrack.songUrl,
+  title: SPOTIFY_CONFIG.playlist.title,
+  artist: SPOTIFY_CONFIG.playlist.artist,
+  albumArt: SPOTIFY_CONFIG.playlist.albumArt,
+  songUrl: SPOTIFY_CONFIG.playlist.url,
   progressMs: 0,
-  durationMs: SPOTIFY_CONFIG.defaultTrack.durationMs,
+  durationMs: 0,
   updatedAt: Date.now()
 };
 
 function renderSpotifyUI(state) {
-  if (trackTitle) {
-    trackTitle.textContent = state.title || "Nothing Playing";
-    if (state.songUrl) trackTitle.href = state.songUrl;
-  }
-  if (trackArtist) trackArtist.textContent = state.artist || "Spotify";
-  if (trackArt && state.albumArt) trackArt.src = state.albumArt;
-  if (spotifyListenLink && state.songUrl) spotifyListenLink.href = state.songUrl;
-
   const isLive = state.isPlaying;
 
   if (isLive) {
+    if (trackTitle) {
+      trackTitle.textContent = state.title || "Playing on Spotify";
+      if (state.songUrl) trackTitle.href = state.songUrl;
+    }
+    if (trackArtist) trackArtist.textContent = state.artist || "Spotify";
+    if (trackArt && state.albumArt) trackArt.src = state.albumArt;
+    if (spotifyListenLink && state.songUrl) {
+      spotifyListenLink.href = state.songUrl;
+      const listenText = document.getElementById('spotify-listen-text');
+      if (listenText) listenText.textContent = "open track";
+    }
+
     if (livePill) {
       livePill.className = "live-pill";
       if (liveStatusText) liveStatusText.textContent = "live";
@@ -815,38 +813,55 @@ function renderSpotifyUI(state) {
     if (statusDot && statusDot.parentElement) statusDot.parentElement.className = "track-status-line";
     if (equalizer) equalizer.classList.add("active");
     if (rawSpotifyText) rawSpotifyText.textContent = `${state.title} — ${state.artist}`;
-  } else {
-    if (livePill) {
-      livePill.className = "live-pill playlist";
-      if (liveStatusText) liveStatusText.textContent = "mix";
-    }
-    if (statusMsg) statusMsg.textContent = "Autumn Mix • Playlist";
-    if (statusDot && statusDot.parentElement) statusDot.parentElement.className = "track-status-line playlist";
-    if (equalizer) equalizer.classList.remove("active");
-    if (rawSpotifyText) rawSpotifyText.textContent = "autumn mix";
-  }
 
-  // Fetch live lyrics for currently playing track
-  if (state.title) {
-    fetchSyncedLyrics(state.title, state.artist, state.durationMs);
+    // Fetch live lyrics for currently playing track
+    if (state.title) {
+      fetchSyncedLyrics(state.title, state.artist, state.durationMs);
+    }
+  } else {
+    // NOT PLAYING LIVE - SHOW YOUR PLAYLIST
+    if (trackTitle) {
+      trackTitle.textContent = SPOTIFY_CONFIG.playlist.title;
+      trackTitle.href = SPOTIFY_CONFIG.playlist.url;
+    }
+    if (trackArtist) trackArtist.textContent = SPOTIFY_CONFIG.playlist.artist;
+    if (trackArt) trackArt.src = SPOTIFY_CONFIG.playlist.albumArt;
+    if (spotifyListenLink) {
+      spotifyListenLink.href = SPOTIFY_CONFIG.playlist.url;
+      const listenText = document.getElementById('spotify-listen-text');
+      if (listenText) listenText.textContent = "open playlist";
+    }
+
+    if (livePill) {
+      livePill.className = "live-pill offline";
+      if (liveStatusText) liveStatusText.textContent = "offline";
+    }
+    if (statusMsg) statusMsg.textContent = "Offline • Playlist";
+    if (statusDot && statusDot.parentElement) statusDot.parentElement.className = "track-status-line offline";
+    if (equalizer) equalizer.classList.remove("active");
+    if (rawSpotifyText) rawSpotifyText.textContent = "[ playing nothing ]";
+
+    if (lyricsScroll) {
+      lyricsScroll.innerHTML = '<p class="lyric-line-placeholder">♫ not playing anything right now — put on a track on Spotify 🎧</p>';
+    }
+    if (lyricsStatusBadge) lyricsStatusBadge.textContent = "offline";
+    if (rawLyricItem) rawLyricItem.style.display = "none";
   }
 
   updateProgressBar();
 }
 
 function updateProgressBar() {
-  if (!currentPlaybackState.durationMs || currentPlaybackState.durationMs <= 0) {
+  if (!currentPlaybackState.isPlaying || !currentPlaybackState.durationMs || currentPlaybackState.durationMs <= 0) {
     if (progressBarFill) progressBarFill.style.width = "0%";
     if (timeCurrent) timeCurrent.textContent = "0:00";
-    if (timeTotal) timeTotal.textContent = "0:00";
+    if (timeTotal) timeTotal.textContent = "--:--";
     return;
   }
 
   let progress = currentPlaybackState.progressMs;
-  if (currentPlaybackState.isPlaying) {
-    const elapsed = Date.now() - currentPlaybackState.updatedAt;
-    progress = Math.min(progress + elapsed, currentPlaybackState.durationMs);
-  }
+  const elapsed = Date.now() - currentPlaybackState.updatedAt;
+  progress = Math.min(progress + elapsed, currentPlaybackState.durationMs);
 
   const percent = Math.min(Math.max((progress / currentPlaybackState.durationMs) * 100, 0), 100);
   if (progressBarFill) progressBarFill.style.width = `${percent}%`;
@@ -1074,14 +1089,14 @@ function connectLanyard() {
 function handleLanyardData(data) {
   if (data && data.listening_to_spotify && data.spotify) {
     const s = data.spotify;
-    const duration = s.timestamps ? (s.timestamps.end - s.timestamps.start) : SPOTIFY_CONFIG.defaultTrack.durationMs;
+    const duration = s.timestamps ? (s.timestamps.end - s.timestamps.start) : 0;
     const progress = s.timestamps ? Math.max(0, Date.now() - s.timestamps.start) : 0;
 
     currentPlaybackState = {
       isPlaying: true,
       title: s.song,
       artist: `${s.artist} • ${s.album || "Spotify"}`,
-      albumArt: s.album_art_url || SPOTIFY_CONFIG.defaultTrack.albumArt,
+      albumArt: s.album_art_url || SPOTIFY_CONFIG.playlist.albumArt,
       songUrl: s.track_id ? `https://open.spotify.com/track/${s.track_id}` : `https://open.spotify.com/search/${encodeURIComponent(s.song + ' ' + s.artist)}`,
       progressMs: progress,
       durationMs: duration,
@@ -1090,12 +1105,12 @@ function handleLanyardData(data) {
   } else {
     currentPlaybackState = {
       isPlaying: false,
-      title: SPOTIFY_CONFIG.defaultTrack.title,
-      artist: SPOTIFY_CONFIG.defaultTrack.artist,
-      albumArt: SPOTIFY_CONFIG.defaultTrack.albumArt,
-      songUrl: SPOTIFY_CONFIG.defaultTrack.songUrl,
+      title: SPOTIFY_CONFIG.playlist.title,
+      artist: SPOTIFY_CONFIG.playlist.artist,
+      albumArt: SPOTIFY_CONFIG.playlist.albumArt,
+      songUrl: SPOTIFY_CONFIG.playlist.url,
       progressMs: 0,
-      durationMs: SPOTIFY_CONFIG.defaultTrack.durationMs,
+      durationMs: 0,
       updatedAt: Date.now()
     };
   }
@@ -1124,19 +1139,30 @@ async function pollCustomEndpoint() {
     const res = await fetch(SPOTIFY_CONFIG.apiEndpoint);
     if (res.ok) {
       const data = await res.json();
-      if (data.title) {
+      if (data && data.is_playing && data.title) {
         currentPlaybackState = {
-          isPlaying: !!data.is_playing,
+          isPlaying: true,
           title: data.title,
           artist: `${data.artist || "Spotify Artist"} • ${data.album || ""}`,
-          albumArt: data.album_art_url || SPOTIFY_CONFIG.defaultTrack.albumArt,
-          songUrl: data.song_url || SPOTIFY_CONFIG.defaultTrack.songUrl,
+          albumArt: data.album_art_url || SPOTIFY_CONFIG.playlist.albumArt,
+          songUrl: data.song_url || SPOTIFY_CONFIG.playlist.url,
           progressMs: data.progress_ms || 0,
-          durationMs: data.duration_ms || SPOTIFY_CONFIG.defaultTrack.durationMs,
+          durationMs: data.duration_ms || 0,
           updatedAt: Date.now()
         };
-        renderSpotifyUI(currentPlaybackState);
+      } else {
+        currentPlaybackState = {
+          isPlaying: false,
+          title: SPOTIFY_CONFIG.playlist.title,
+          artist: SPOTIFY_CONFIG.playlist.artist,
+          albumArt: SPOTIFY_CONFIG.playlist.albumArt,
+          songUrl: SPOTIFY_CONFIG.playlist.url,
+          progressMs: 0,
+          durationMs: 0,
+          updatedAt: Date.now()
+        };
       }
+      renderSpotifyUI(currentPlaybackState);
     }
   } catch (e) {
     console.warn("Custom Spotify API error:", e);
