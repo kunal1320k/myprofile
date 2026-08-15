@@ -1228,18 +1228,19 @@ async function pollCustomEndpoint() {
 // ── UNIQUE VISITOR COUNTER ──────────────────────────────────────────────────
 async function initVisitorCounter() {
   const KEY = "kunal1320k_unique_wanderers";
-  // Check if this browser/device has ever visited before (persists permanently across tabs & sessions)
+  // Check if this browser/device has ever visited before
   const isReturningVisitor = localStorage.getItem("kunal1320k_unique_visitor_v1");
   const action = isReturningVisitor ? "get" : "hit";
-  const endpoint = `https://countapi.mileshilliard.com/api/v1/${action}/${KEY}`;
+  const endpoint = `https://countapi.mileshilliard.com/api/v1/${action}/${KEY}?_=${Date.now()}`;
 
   try {
-    const res = await fetch(endpoint);
+    const res = await fetch(endpoint, { cache: 'no-store' });
     if (res.ok) {
       const data = await res.json();
-      const count = data.value || 1;
+      const count = Number(data.value) || 1;
       // Mark permanently so this user is never counted more than once
       localStorage.setItem("kunal1320k_unique_visitor_v1", "true");
+      localStorage.setItem("kunal1320k_last_known_count", String(count));
       animateCount(count);
     } else {
       fallbackCount();
@@ -1255,7 +1256,7 @@ function animateCount(target) {
   if (!visitorCount) return;
 
   let current = 0;
-  const step = Math.max(1, Math.floor(target / 30));
+  const step = Math.max(1, Math.floor(target / 25));
   const timer = setInterval(() => {
     current += step;
     if (current >= target) {
@@ -1263,12 +1264,14 @@ function animateCount(target) {
       clearInterval(timer);
     }
     visitorCount.textContent = `✦ ${current.toLocaleString()} unique wanderers`;
-  }, 30);
+  }, 25);
 }
 
 function fallbackCount() {
-  if (rawViewsCount) rawViewsCount.textContent = "1";
-  if (visitorCount) visitorCount.textContent = "✦ 1 unique wanderer";
+  const saved = localStorage.getItem("kunal1320k_last_known_count") || "1";
+  const formatted = Number(saved).toLocaleString();
+  if (rawViewsCount) rawViewsCount.textContent = formatted;
+  if (visitorCount) visitorCount.textContent = `✦ ${formatted} unique wanderer${saved === "1" ? "" : "s"}`;
 }
 
 // Toggle lyrics accordion
