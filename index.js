@@ -798,13 +798,15 @@ let currentPlaybackState = {
 
 function renderSpotifyUI(state) {
   const isLive = state.isPlaying;
+  const ytmusicListenLink = document.getElementById('ytmusic-listen-link');
+  const spotifyHeading = document.getElementById('spotify-heading');
 
   if (isLive) {
     if (trackTitle) {
-      trackTitle.textContent = state.title || "Playing on Spotify";
+      trackTitle.textContent = state.title || "Playing Live";
       if (state.songUrl) trackTitle.href = state.songUrl;
     }
-    if (trackArtist) trackArtist.textContent = state.artist || "Spotify";
+    if (trackArtist) trackArtist.textContent = state.artist || "Music";
     if (trackArt) {
       const isPlaceholder = !state.albumArt || state.albumArt.includes("2a96cbd8b46e442fc41c2b86b821562f") || state.albumArt.includes("default_album");
       if (!isPlaceholder) {
@@ -818,18 +820,48 @@ function renderSpotifyUI(state) {
         });
       }
     }
-    if (spotifyListenLink && state.songUrl) {
-      spotifyListenLink.href = state.songUrl;
+
+    if (spotifyListenLink) {
+      spotifyListenLink.href = state.songUrl || `https://open.spotify.com/search/${encodeURIComponent(state.title + ' ' + state.artist)}`;
       const listenText = document.getElementById('spotify-listen-text');
-      if (listenText) listenText.textContent = "open track";
+      if (listenText) listenText.textContent = "spotify";
+    }
+
+    if (ytmusicListenLink) {
+      ytmusicListenLink.href = `https://music.youtube.com/search?q=${encodeURIComponent(state.title + ' ' + state.artist)}`;
+      ytmusicListenLink.style.display = "inline-flex";
     }
 
     if (livePill) {
       livePill.className = "live-pill";
       if (liveStatusText) liveStatusText.textContent = "live";
     }
-    if (statusMsg) statusMsg.textContent = "Listening on Spotify";
-    if (statusDot && statusDot.parentElement) statusDot.parentElement.className = "track-status-line";
+
+    // Dynamic Platform Differentiation (Spotify vs YouTube Music vs General Music)
+    const platform = state.source || (state.songUrl && state.songUrl.includes("spotify.com/track") ? "spotify" : "music");
+    if (statusMsg) {
+      if (platform === "spotify") {
+        statusMsg.textContent = "Listening on Spotify";
+      } else if (platform === "ytmusic") {
+        statusMsg.textContent = "Listening on YouTube Music";
+      } else {
+        statusMsg.textContent = "Now Playing • Live Music";
+      }
+    }
+
+    if (spotifyHeading) {
+      if (platform === "spotify") {
+        spotifyHeading.textContent = "now playing — spotify";
+      } else if (platform === "ytmusic") {
+        spotifyHeading.textContent = "now playing — youtube music";
+      } else {
+        spotifyHeading.textContent = "now playing — live music";
+      }
+    }
+
+    if (statusDot && statusDot.parentElement) {
+      statusDot.parentElement.className = `track-status-line ${platform}`;
+    }
     if (equalizer) equalizer.classList.add("active");
     if (rawSpotifyText) rawSpotifyText.textContent = `${state.title} — ${state.artist}`;
 
@@ -850,7 +882,11 @@ function renderSpotifyUI(state) {
       const listenText = document.getElementById('spotify-listen-text');
       if (listenText) listenText.textContent = "open playlist";
     }
+    if (ytmusicListenLink) {
+      ytmusicListenLink.style.display = "none";
+    }
 
+    if (spotifyHeading) spotifyHeading.textContent = "now playing — spotify";
     if (livePill) {
       livePill.className = "live-pill offline";
       if (liveStatusText) liveStatusText.textContent = "offline";
@@ -1379,7 +1415,10 @@ async function fetchLastFmNowPlaying() {
           if (meta.durationMs) currentPlaybackState.durationMs = meta.durationMs;
         }
 
-        if (!albumArt) albumArt = SPOTIFY_CONFIG.playlist.albumArt;
+        let platform = "music";
+        if (currentTrack.url && (currentTrack.url.includes("youtube") || currentTrack.url.includes("youtu.be"))) {
+          platform = "ytmusic";
+        }
 
         currentPlaybackState = {
           isPlaying: true,
@@ -1389,6 +1428,7 @@ async function fetchLastFmNowPlaying() {
           songUrl: songUrl,
           progressMs: elapsedMs,
           durationMs: currentPlaybackState.durationMs > 0 ? currentPlaybackState.durationMs : 210000,
+          source: platform,
           updatedAt: Date.now()
         };
 

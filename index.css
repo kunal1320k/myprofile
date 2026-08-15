@@ -622,6 +622,22 @@ body.aesthetic {
       color: #dfb282;
     }
 
+    .track-status-line.ytmusic {
+      color: #ff4757;
+    }
+
+    .track-status-line.ytmusic .equalizer .bar {
+      background: #ff4757;
+    }
+
+    .track-status-line.music {
+      color: #e28743;
+    }
+
+    .track-status-line.music .equalizer .bar {
+      background: #e28743;
+    }
+
     .status-indicator-dot {
       width: 5px;
       height: 5px;
