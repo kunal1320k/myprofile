@@ -915,35 +915,63 @@ async function fetchSyncedLyrics(title, artist, durationMs) {
   const cleanTitle = title
     .replace(/\s*\(feat\..*?\)/i, '')
     .replace(/\s*\[feat\..*?\]/i, '')
+    .replace(/\s*\(from.*?\)/i, '')
+    .replace(/\s*-\s*.*from.*/i, '')
     .replace(/\s*-\s*.*version.*/i, '')
     .replace(/\s*-\s*.*remaster.*/i, '')
     .trim();
-  const cleanArtist = artist ? artist.split('•')[0].split(',')[0].trim() : "";
+  
+  // Extract primary artist (handles Achint; Arijit Singh... or Taylor Swift • Red...)
+  const cleanArtist = artist ? artist.split(/[;•,]/)[0].trim() : "";
 
   try {
-    let url = `https://lrclib.net/api/get?track_name=${encodeURIComponent(cleanTitle)}&artist_name=${encodeURIComponent(cleanArtist)}`;
-    if (durationMs) {
-      url += `&duration=${Math.round(durationMs / 1000)}`;
-    }
-    let res = await fetch(url);
     let data = null;
 
-    if (res.ok) {
-      data = await res.json();
-    } else {
-      const searchRes = await fetch(`https://lrclib.net/api/search?q=${encodeURIComponent(cleanTitle + ' ' + cleanArtist)}`);
-      if (searchRes.ok) {
-        const searchList = await searchRes.json();
-        if (searchList && searchList.length > 0) {
-          data = searchList.find(item => item.syncedLyrics) || searchList[0];
+    // 1. Try exact match get
+    if (cleanArtist) {
+      try {
+        let url = `https://lrclib.net/api/get?track_name=${encodeURIComponent(cleanTitle)}&artist_name=${encodeURIComponent(cleanArtist)}`;
+        if (durationMs) url += `&duration=${Math.round(durationMs / 1000)}`;
+        const res = await fetch(url);
+        if (res.ok) data = await res.json();
+      } catch (e) {}
+    }
+
+    // 2. Try search with title + artist
+    if (!data || (!data.syncedLyrics && !data.plainLyrics)) {
+      try {
+        const query = cleanArtist ? `${cleanTitle} ${cleanArtist}` : cleanTitle;
+        const searchRes = await fetch(`https://lrclib.net/api/search?q=${encodeURIComponent(query)}`);
+        if (searchRes.ok) {
+          const list = await searchRes.json();
+          if (list && list.length > 0) {
+            data = list.find(item => item.syncedLyrics) || list[0];
+          }
         }
-      }
+      } catch (e) {}
+    }
+
+    // 3. Try search with title only (ideal for Bollywood / soundtracks)
+    if (!data || (!data.syncedLyrics && !data.plainLyrics)) {
+      try {
+        const titleSearchRes = await fetch(`https://lrclib.net/api/search?q=${encodeURIComponent(cleanTitle)}`);
+        if (titleSearchRes.ok) {
+          const list = await titleSearchRes.json();
+          if (list && list.length > 0) {
+            data = list.find(item => item.syncedLyrics) || list[0];
+          }
+        }
+      } catch (e) {}
     }
 
     if (data && data.syncedLyrics) {
       currentLyrics = parseLRC(data.syncedLyrics);
       renderLyricsLines(currentLyrics);
       if (lyricsStatusBadge) lyricsStatusBadge.textContent = "synced";
+      // Trigger sync with current progress immediately
+      if (currentPlaybackState.progressMs) {
+        syncActiveLyric(currentPlaybackState.progressMs);
+      }
     } else if (data && data.plainLyrics) {
       currentLyrics = data.plainLyrics.split('\n').filter(t => t.trim()).map(t => ({ timeMs: 0, text: t.trim() }));
       renderLyricsLines(currentLyrics);
@@ -956,9 +984,9 @@ async function fetchSyncedLyrics(title, artist, durationMs) {
     }
   } catch (err) {
     if (lyricsScroll) {
-      lyricsScroll.innerHTML = '<p class="lyric-line-placeholder">♫ enjoy the autumn breeze</p>';
+      lyricsScroll.innerHTML = '<p class="lyric-line-placeholder">♫ lyrics temporarily unavailable</p>';
     }
-    if (lyricsStatusBadge) lyricsStatusBadge.textContent = "offline";
+    if (lyricsStatusBadge) lyricsStatusBadge.textContent = "error";
   }
 }
 
