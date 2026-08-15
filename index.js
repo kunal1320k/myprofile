@@ -932,15 +932,19 @@ async function fetchSyncedLyrics(title, artist, durationMs) {
   if (lyricsStatusBadge) lyricsStatusBadge.textContent = "fetching";
 
   const cleanTitle = title
-    .replace(/\s*\(feat\..*?\)/i, '')
-    .replace(/\s*\[feat\..*?\]/i, '')
-    .replace(/\s*\(from.*?\)/i, '')
-    .replace(/\s*-\s*.*from.*/i, '')
-    .replace(/\s*-\s*.*version.*/i, '')
-    .replace(/\s*-\s*.*remaster.*/i, '')
+    .replace(/\s*\(feat\..*?\)/gi, '')
+    .replace(/\s*\[feat\..*?\]/gi, '')
+    .replace(/\s*\(from.*?\)/gi, '')
+    .replace(/\s*\[from.*?\]/gi, '')
+    .replace(/\s*-\s*from\s+.*$/gi, '')
+    .replace(/\s*\(movie.*?\)/gi, '')
+    .replace(/\s*-\s*.*version.*/gi, '')
+    .replace(/\s*-\s*.*remaster.*/gi, '')
+    .replace(/\s*\(with.*?\)/gi, '')
+    .replace(/\s*\(original.*?\)/gi, '')
     .trim();
   
-  // Extract primary artist (handles Achint; Arijit Singh... or Taylor Swift • Red...)
+  // Extract primary artist (handles Sachet-Parampara, Achint; Arijit Singh... or Taylor Swift • Red...)
   const cleanArtist = artist ? artist.split(/[;•,]/)[0].trim() : "";
 
   try {
@@ -1002,15 +1006,15 @@ async function fetchSyncedLyrics(title, artist, durationMs) {
       if (lyricsStatusBadge) lyricsStatusBadge.textContent = "plain text";
     } else {
       if (lyricsScroll) {
-        lyricsScroll.innerHTML = '<p class="lyric-line-placeholder">♫ instrumental / lyrics not found</p>';
+        lyricsScroll.innerHTML = '<p class="lyric-line-placeholder">♫ couldn\'t find lyrics for this one... just hum along and vibe 🎶</p>';
       }
-      if (lyricsStatusBadge) lyricsStatusBadge.textContent = "none";
+      if (lyricsStatusBadge) lyricsStatusBadge.textContent = "no lyrics";
     }
   } catch (err) {
     if (lyricsScroll) {
-      lyricsScroll.innerHTML = '<p class="lyric-line-placeholder">♫ lyrics temporarily unavailable</p>';
+      lyricsScroll.innerHTML = '<p class="lyric-line-placeholder">♫ no lyrics found... just pretend you know the words 🤫</p>';
     }
-    if (lyricsStatusBadge) lyricsStatusBadge.textContent = "error";
+    if (lyricsStatusBadge) lyricsStatusBadge.textContent = "no lyrics";
   }
 }
 
