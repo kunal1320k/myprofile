@@ -861,7 +861,7 @@ function renderSpotifyUI(state) {
     if (rawSpotifyText) rawSpotifyText.textContent = "[ playing nothing ]";
 
     if (lyricsScroll) {
-      lyricsScroll.innerHTML = '<p class="lyric-line-placeholder">♫ not playing anything right now — put on a track on Spotify 🎧</p>';
+      lyricsScroll.innerHTML = '<p class="lyric-line-placeholder">♫ dont have lyrics rn... go play some bangers on spotify 🎧</p>';
     }
     if (lyricsStatusBadge) lyricsStatusBadge.textContent = "offline";
     if (rawLyricItem) rawLyricItem.style.display = "none";
