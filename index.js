@@ -10,11 +10,18 @@ const LINKS = [
 ];
 // ── SPOTIFY & USER CONFIGURATION ──────────────────────────────────────────
 const SPOTIFY_CONFIG = {
-  // Option 1: Discord ID for Lanyard real-time WebSocket / REST (Zero-server setup!)
+  // Option 1: Last.fm 24/7 Cloud Tracker (100% Free, Works Everywhere without any apps open!)
+  lastfm: {
+    username: "kunal1320k",
+    apiKey: "8cb15a1d7dae6195b40a2f403fa6447f",
+    pollIntervalMs: 4000
+  },
+
+  // Option 2: Discord ID for Lanyard real-time WebSocket / REST
   discordId: "1085524274774802515",
 
-  // Option 2: Custom Serverless API Endpoint (from Vercel / Cloudflare Worker)
-  apiEndpoint: "", // e.g. "https://myprofile-spotify-api.vercel.app/api/spotify"
+  // Option 3: Custom Serverless API Endpoint (from Vercel / Cloudflare Worker)
+  apiEndpoint: "",
 
   // kunal1320k's Spotify Playlist
   playlist: {
@@ -964,6 +971,11 @@ async function fetchSyncedLyrics(title, artist, durationMs) {
       } catch (e) {}
     }
 
+    if (data && data.duration && (!currentPlaybackState.durationMs || currentPlaybackState.durationMs === 210000)) {
+      currentPlaybackState.durationMs = data.duration * 1000;
+      if (timeTotal) timeTotal.textContent = formatMs(currentPlaybackState.durationMs);
+    }
+
     if (data && data.syncedLyrics) {
       currentLyrics = parseLRC(data.syncedLyrics);
       renderLyricsLines(currentLyrics);
@@ -1259,10 +1271,85 @@ if (toggleEmbedBtn) {
   });
 }
 
+// ── LAST.FM REAL-TIME 24/7 SPOTIFY CLOUD TRACKER ─────────────────────────
+let lastFmTrackStartTime = 0;
+let lastFmCurrentTrackKey = "";
+let lanyardSocketActive = false;
+
+async function fetchLastFmNowPlaying() {
+  if (!SPOTIFY_CONFIG.lastfm || !SPOTIFY_CONFIG.lastfm.username || !SPOTIFY_CONFIG.lastfm.apiKey) return;
+  try {
+    const url = `https://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&user=${encodeURIComponent(SPOTIFY_CONFIG.lastfm.username)}&api_key=${SPOTIFY_CONFIG.lastfm.apiKey}&format=json&limit=1&_=${Date.now()}`;
+    const res = await fetch(url);
+    if (!res.ok) return;
+    const data = await res.json();
+
+    if (data && data.recenttracks && data.recenttracks.track) {
+      const tracks = Array.isArray(data.recenttracks.track) ? data.recenttracks.track : [data.recenttracks.track];
+      const currentTrack = tracks[0];
+
+      if (currentTrack && currentTrack['@attr'] && currentTrack['@attr'].nowplaying === "true") {
+        const title = currentTrack.name || "Unknown Track";
+        const artist = (currentTrack.artist && (currentTrack.artist['#text'] || currentTrack.artist.name)) || "Unknown Artist";
+        const album = (currentTrack.album && (currentTrack.album['#text'] || currentTrack.album.name)) || "";
+        
+        let albumArt = "";
+        if (currentTrack.image && Array.isArray(currentTrack.image)) {
+          const img = currentTrack.image.find(i => i.size === "extralarge") || currentTrack.image.find(i => i.size === "large") || currentTrack.image[currentTrack.image.length - 1];
+          if (img && img['#text']) albumArt = img['#text'];
+        }
+        if (!albumArt) albumArt = SPOTIFY_CONFIG.playlist.albumArt;
+
+        const trackKey = `${title}_${artist}`.toLowerCase();
+        if (trackKey !== lastFmCurrentTrackKey) {
+          lastFmCurrentTrackKey = trackKey;
+          lastFmTrackStartTime = Date.now();
+        }
+
+        const songUrl = currentTrack.url || `https://open.spotify.com/search/${encodeURIComponent(title + ' ' + artist)}`;
+        const elapsedMs = Math.max(0, Date.now() - lastFmTrackStartTime);
+
+        currentPlaybackState = {
+          isPlaying: true,
+          title: title,
+          artist: album ? `${artist} • ${album}` : artist,
+          albumArt: albumArt,
+          songUrl: songUrl,
+          progressMs: elapsedMs,
+          durationMs: currentPlaybackState.title === title && currentPlaybackState.durationMs > 0 ? currentPlaybackState.durationMs : 210000,
+          updatedAt: Date.now()
+        };
+
+        renderSpotifyUI(currentPlaybackState);
+        return;
+      }
+    }
+
+    // If Last.fm is not playing and Lanyard socket is not reporting a live song
+    if (currentPlaybackState.isPlaying && !lanyardSocketActive) {
+      currentPlaybackState = {
+        isPlaying: false,
+        title: SPOTIFY_CONFIG.playlist.title,
+        artist: SPOTIFY_CONFIG.playlist.artist,
+        albumArt: SPOTIFY_CONFIG.playlist.albumArt,
+        songUrl: SPOTIFY_CONFIG.playlist.url,
+        progressMs: 0,
+        durationMs: 0,
+        updatedAt: Date.now()
+      };
+      lastFmCurrentTrackKey = "";
+      renderSpotifyUI(currentPlaybackState);
+    }
+  } catch (err) {
+    console.warn("Last.fm tracker error:", err);
+  }
+}
+
 // Sync button
 if (shuffleBtn) {
   shuffleBtn.addEventListener('click', () => {
     shuffleBtn.textContent = "↻ syncing...";
+    fetchLastFmNowPlaying();
     if (SPOTIFY_CONFIG.apiEndpoint) {
       pollCustomEndpoint();
     } else {
@@ -1283,6 +1370,8 @@ muteBtn.addEventListener('click', () => {
 
 // Initialize on page load
 initVisitorCounter();
+fetchLastFmNowPlaying();
+setInterval(fetchLastFmNowPlaying, 3500);
 connectLanyard();
 renderSpotifyUI(currentPlaybackState);
 
