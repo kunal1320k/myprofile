@@ -957,7 +957,14 @@ function parseLRC(lrc) {
 async function fetchSyncedLyrics(title, artist, durationMs) {
   if (!title) return;
   const trackKey = `${title}_${artist}`.toLowerCase();
-  if (currentLyricsTrackKey === trackKey && currentLyrics.length > 0) return;
+  if (currentLyricsTrackKey === trackKey && currentLyrics.length > 0) {
+    renderLyricsLines(currentLyrics);
+    if (lyricsStatusBadge) lyricsStatusBadge.textContent = "synced";
+    if (currentPlaybackState.progressMs) {
+      syncActiveLyric(currentPlaybackState.progressMs);
+    }
+    return;
+  }
   currentLyricsTrackKey = trackKey;
   currentLyrics = [];
   currentActiveLyricIndex = -1;
@@ -980,8 +987,8 @@ async function fetchSyncedLyrics(title, artist, durationMs) {
     .replace(/\s*\(original.*?\)/gi, '')
     .trim();
   
-  // Extract primary artist (handles Sachet-Parampara, Achint; Arijit Singh... or Taylor Swift • Red...)
-  const cleanArtist = artist ? artist.split(/[;•,]/)[0].trim() : "";
+  // Extract primary artist (handles Red Hot Chili Peppers • Californication, Sachet-Parampara, etc.)
+  const cleanArtist = artist ? artist.split(/[\u2022;,\-\|]/)[0].trim() : "";
 
   try {
     let data = null;
@@ -1192,9 +1199,12 @@ function handleLanyardData(data) {
       songUrl: s.track_id ? `https://open.spotify.com/track/${s.track_id}` : `https://open.spotify.com/search/${encodeURIComponent(s.song + ' ' + s.artist)}`,
       progressMs: progress,
       durationMs: duration,
+      source: "spotify",
       updatedAt: Date.now()
     };
-  } else {
+    renderSpotifyUI(currentPlaybackState);
+  } else if (!lastFmNowPlayingActive) {
+    // Only set offline if Last.fm is NOT actively reporting a track
     currentPlaybackState = {
       isPlaying: false,
       title: SPOTIFY_CONFIG.playlist.title,
@@ -1205,9 +1215,8 @@ function handleLanyardData(data) {
       durationMs: 0,
       updatedAt: Date.now()
     };
+    renderSpotifyUI(currentPlaybackState);
   }
-
-  renderSpotifyUI(currentPlaybackState);
 }
 
 async function fetchLanyardRest() {
@@ -1329,6 +1338,7 @@ if (toggleEmbedBtn) {
 // ── LAST.FM REAL-TIME 24/7 SPOTIFY CLOUD TRACKER ─────────────────────────
 let lastFmTrackStartTime = 0;
 let lastFmCurrentTrackKey = "";
+let lastFmNowPlayingActive = false;
 let lanyardSocketActive = false;
 const artworkCache = new Map();
 
@@ -1432,10 +1442,13 @@ async function fetchLastFmNowPlaying() {
           updatedAt: Date.now()
         };
 
+        lastFmNowPlayingActive = true;
         renderSpotifyUI(currentPlaybackState);
         return;
       }
     }
+
+    lastFmNowPlayingActive = false;
 
     // If Last.fm is not playing and Lanyard socket is not reporting a live song
     if (currentPlaybackState.isPlaying && !lanyardSocketActive) {
