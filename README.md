@@ -64,10 +64,9 @@ If you prefer direct Spotify OAuth without Discord:
 
 ---
 
-## 👁️ Visitor View Counter
+## Visitor Counter
 
-The view counter uses [CountAPI](https://countapi.mileshilliard.com) with the key `kunal1320k_portfolio_visits`.
-It increments when a new visitor loads the page and stores session state to prevent false counts during reloads.
+The counter uses `api.counterapi.dev` for a persistent shared total. A browser-local flag prevents repeat increments from the same browser without collecting or storing visitors' IP addresses. A static GitHub Pages site cannot make an IP address both private and reliably unique; use a Cloudflare Worker with privacy-reviewed server-side deduplication if that level of measurement is required.
 
 ---
 

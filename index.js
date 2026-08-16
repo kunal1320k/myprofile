@@ -14,7 +14,7 @@ const SPOTIFY_CONFIG = {
   lastfm: {
     username: "kunal1320k",
     apiKey: "8cb15a1d7dae6195b40a2f403fa6447f",
-    pollIntervalMs: 4000
+    pollIntervalMs: 3500
   },
 
   // Option 2: Discord ID for Lanyard real-time WebSocket / REST
@@ -26,7 +26,7 @@ const SPOTIFY_CONFIG = {
   // kunal1320k's Spotify Playlist
   playlist: {
     id: "14d7SJJHjhwEerGgKaUa4J",
-    title: "angrexxxxi 🥟",
+    title: "angrexxxxi",
     artist: "kunal1320k • playlist",
     albumArt: "https://mosaic.scdn.co/640/ab67616d00001e028324db1ae37be249aed887e7ab67616d00001e02b1f8da74f225fa1225cdfaceab67616d00001e02c8e97cafeb2acb85b21a777eab67616d00001e02ef694f8a1e178963cf25c2b5",
     url: "https://open.spotify.com/playlist/14d7SJJHjhwEerGgKaUa4J?si=xpg45s19Ty6RTb1aWdBUdQ"
@@ -789,6 +789,29 @@ function formatMs(ms) {
   return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
 }
 
+function trackSearchQuery(state = currentPlaybackState) {
+  const title = (state.title || "").replace(/\s*\((?:feat\.|with|from).*?\)/gi, "").trim();
+  const artist = (state.artist || "").split(/[\u2022;,\-|]/)[0].trim();
+  return `${title} ${artist}`.trim();
+}
+
+function spotifyTrackUrl(state) {
+  if (state.songUrl && /open\.spotify\.com\/track/i.test(state.songUrl)) return state.songUrl;
+  return `https://open.spotify.com/search/${encodeURIComponent(trackSearchQuery(state))}`;
+}
+
+function liveElapsedSeconds() {
+  if (!currentPlaybackState.isPlaying) return 0;
+  const elapsed = (currentPlaybackState.progressMs || 0) + (Date.now() - (currentPlaybackState.updatedAt || Date.now()));
+  return Math.max(0, Math.floor(elapsed / 1000));
+}
+
+function updateYouTubeLaunchUrl() {
+  if (!youtubeListenLink || !currentPlaybackState.isPlaying) return;
+  const query = `${trackSearchQuery()} official video`;
+  youtubeListenLink.href = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}&t=${liveElapsedSeconds()}s`;
+}
+
 let currentPlaybackState = {
   isPlaying: false,
   title: SPOTIFY_CONFIG.playlist.title,
@@ -826,21 +849,18 @@ function renderSpotifyUI(state) {
     }
 
     if (spotifyListenLink) {
-      spotifyListenLink.href = state.songUrl || `https://open.spotify.com/search/${encodeURIComponent(state.title + ' ' + state.artist)}`;
+      spotifyListenLink.href = spotifyTrackUrl(state);
       const listenText = document.getElementById('spotify-listen-text');
       if (listenText) listenText.textContent = "spotify";
     }
 
     if (ytmusicListenLink) {
-      ytmusicListenLink.href = `https://music.youtube.com/search?q=${encodeURIComponent(state.title + ' ' + state.artist)}`;
+      ytmusicListenLink.href = `https://music.youtube.com/search?q=${encodeURIComponent(trackSearchQuery(state))}`;
       ytmusicListenLink.style.display = "inline-flex";
     }
 
     if (youtubeListenLink) {
-      const cleanTitle = (state.title || "").replace(/\s*\(feat\..*?\)/i, '').trim();
-      const cleanArtist = (state.artist || "").split(/\u2022|;|,|-|\|/)[0].trim();
-      const query = `${cleanTitle} ${cleanArtist}`;
-      youtubeListenLink.href = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
+      updateYouTubeLaunchUrl();
       youtubeListenLink.style.display = "inline-flex";
     }
 
@@ -1176,8 +1196,14 @@ function syncActiveLyric(progressMs) {
 setInterval(() => {
   if (currentPlaybackState.isPlaying) {
     updateProgressBar();
+    updateYouTubeLaunchUrl();
   }
 }, 1000);
+
+if (youtubeListenLink) {
+  // The timestamp is refreshed at the instant the visitor launches the video.
+  youtubeListenLink.addEventListener('click', updateYouTubeLaunchUrl);
+}
 
 let lanyardSocket = null;
 let heartbeatTimer = null;
@@ -1331,19 +1357,22 @@ async function pollCustomEndpoint() {
 
 // ── UNIQUE VISITOR COUNTER ──────────────────────────────────────────────────
 async function initVisitorCounter() {
-  const KEY = "kunal1320k_unique_wanderers";
-  // Check if this browser/device has ever visited before
-  const isReturningVisitor = localStorage.getItem("kunal1320k_unique_visitor_v1");
-  const action = isReturningVisitor ? "get" : "hit";
-  const endpoint = `https://countapi.mileshilliard.com/api/v1/${action}/${KEY}?_=${Date.now()}`;
+  const namespace = "kunal1320k";
+  const key = "profile";
+  const visitorKey = "profile_visitor_counted";
+  // A static site cannot safely identify people by IP.  The public counter gives
+  // us a persistent shared total while this flag prevents repeat increments from
+  // the same browser without collecting personal data.
+  const isReturningVisitor = localStorage.getItem(visitorKey);
+  const action = isReturningVisitor ? "get" : "up";
+  const endpoint = `https://api.counterapi.dev/v1/${namespace}/${key}/${action}`;
 
   try {
     const res = await fetch(endpoint, { cache: 'no-store' });
     if (res.ok) {
       const data = await res.json();
-      const count = Number(data.value) || 1;
-      // Mark permanently so this user is never counted more than once
-      localStorage.setItem("kunal1320k_unique_visitor_v1", "true");
+      const count = Number(data.count ?? data.value) || 17;
+      localStorage.setItem(visitorKey, "true");
       localStorage.setItem("kunal1320k_last_known_count", String(count));
       animateCount(count);
     } else {
@@ -1356,7 +1385,7 @@ async function initVisitorCounter() {
 
 function animateCount(target) {
   const formatted = Number(target).toLocaleString();
-  if (rawViewsCount) rawViewsCount.textContent = formatted;
+  if (rawViewsCount) rawViewsCount.textContent = `✦ ${formatted} unique wanderers`;
   if (!visitorCount) return;
 
   let current = 0;
@@ -1372,10 +1401,10 @@ function animateCount(target) {
 }
 
 function fallbackCount() {
-  const saved = localStorage.getItem("kunal1320k_last_known_count") || "1";
+  const saved = localStorage.getItem("kunal1320k_last_known_count") || "17";
   const formatted = Number(saved).toLocaleString();
-  if (rawViewsCount) rawViewsCount.textContent = formatted;
-  if (visitorCount) visitorCount.textContent = `✦ ${formatted} unique wanderer${saved === "1" ? "" : "s"}`;
+  if (rawViewsCount) rawViewsCount.textContent = `✦ ${formatted} unique wanderers`;
+  if (visitorCount) visitorCount.textContent = `✦ ${formatted} unique wanderers`;
 }
 
 // ── SWITCHABLE MEDIA ACCORDION PANEL (Lyrics / Playlist Embed) ────
@@ -1603,7 +1632,7 @@ muteBtn.addEventListener('click', () => {
 // Initialize on page load
 initVisitorCounter();
 fetchLastFmNowPlaying();
-setInterval(fetchLastFmNowPlaying, 3500);
+setInterval(fetchLastFmNowPlaying, SPOTIFY_CONFIG.lastfm.pollIntervalMs);
 connectLanyard();
 renderSpotifyUI(currentPlaybackState);
 
