@@ -10,7 +10,7 @@
   <link
     href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap"
     rel="stylesheet">
-  <link rel="stylesheet" href="index.css?v=20260816_1">
+  <link rel="stylesheet" href="index.css?v=20260816_2">
 </head>
 
 <body class="raw">
@@ -141,22 +141,51 @@
                 </div>
               </div>
 
-              <!-- View 2: YouTube Live Track Player -->
+              <!-- View 2: Live Track Audio Stream & Video Links -->
               <div class="media-view hidden" id="yt-view">
-                <div class="yt-player-top">
-                  <span class="yt-player-label">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon" style="margin-right:4px;vertical-align:middle;">
-                      <polygon points="6 3 20 12 6 21 6 3"/>
-                    </svg>
-                    youtube live stream
-                  </span>
+                <div class="live-stream-card">
+                  <div class="live-stream-header">
+                    <span class="live-stream-badge">
+                      <span class="stream-pulse-dot"></span>
+                      live stream audio
+                    </span>
+                    <span id="stream-time-text" class="stream-time-text">0:00 / 0:30</span>
+                  </div>
+                  
+                  <div class="live-stream-controls">
+                    <button id="stream-play-btn" class="stream-play-btn" type="button">
+                      <svg id="stream-play-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="margin-right:6px;vertical-align:middle">
+                        <polygon points="5 3 19 12 5 21 5 3"/>
+                      </svg>
+                      <span id="stream-play-text">listen preview</span>
+                    </button>
+
+                    <div class="stream-wave-visualizer" id="stream-visualizer">
+                      <span class="v-bar"></span>
+                      <span class="v-bar"></span>
+                      <span class="v-bar"></span>
+                      <span class="v-bar"></span>
+                      <span class="v-bar"></span>
+                      <span class="v-bar"></span>
+                    </div>
+                  </div>
+
+                  <div class="stream-links-row">
+                    <a id="stream-yt-link" class="stream-ext-link yt-link" href="https://youtube.com" target="_blank" rel="noopener noreferrer">
+                      <svg viewBox="0 0 24 24" width="12" height="12" fill="#ff0033" style="margin-right:5px;vertical-align:middle">
+                        <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                      </svg>
+                      youtube video ↗
+                    </a>
+                    <a id="stream-ytm-link" class="stream-ext-link ytm-link" href="https://music.youtube.com" target="_blank" rel="noopener noreferrer">
+                      <svg viewBox="0 0 24 24" width="12" height="12" fill="#ff0033" style="margin-right:5px;vertical-align:middle">
+                        <path d="M12 0C5.376 0 0 5.376 0 12s5.376 12 12 12 12-5.376 12-12S18.624 0 12 0zm0 19.104c-3.924 0-7.104-3.18-7.104-7.104S8.076 4.896 12 4.896s7.104 3.18 7.104 7.104-3.18 7.104-7.104 7.104zm-2.4-10.464v6.72L15.36 12 9.6 8.64z"/>
+                      </svg>
+                      yt music ↗
+                    </a>
+                  </div>
                 </div>
-                <iframe id="yt-player-frame"
-                  src=""
-                  allow="autoplay; encrypted-media; picture-in-picture"
-                  allowfullscreen
-                  loading="lazy"
-                  title="YouTube live player"></iframe>
+                <audio id="live-stream-audio" preload="none"></audio>
               </div>
 
               <!-- View 3: Spotify Playlist Embed -->
@@ -235,7 +264,7 @@
   <div id="wave-ring"></div>
   <audio id="theme-audio" src="./nothing_new.mp3" loop preload="auto"></audio>
 
-  <script src="index.js?v=20260816_1"></script>
+  <script src="index.js?v=20260816_2"></script>
 </body>
 
 </html>

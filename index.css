@@ -957,28 +957,143 @@ body.aesthetic {
       font-style: italic;
     }
 
-    #yt-view {
-      gap: 8px;
+    .live-stream-card {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding: 4px 0;
     }
 
-    .yt-player-top {
+    .live-stream-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      padding-bottom: 8px;
+    }
+
+    .live-stream-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
       font-family: "JetBrains Mono", monospace;
       font-size: 10px;
       text-transform: uppercase;
       letter-spacing: 0.08em;
       color: #dfb282;
-      padding-bottom: 4px;
     }
 
-    #yt-player-frame {
-      width: 100%;
-      height: 180px;
-      border: 0;
-      border-radius: 8px;
-      background: #000;
+    .stream-pulse-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #ff4757;
+      box-shadow: 0 0 8px #ff4757;
+      animation: pulse-dot 1.4s infinite;
+    }
+
+    .stream-time-text {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 10px;
+      color: #8c8276;
+    }
+
+    .live-stream-controls {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 6px 0;
+    }
+
+    .stream-play-btn {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      background: rgba(226, 135, 67, 0.15);
+      border: 1px solid rgba(226, 135, 67, 0.35);
+      color: #dfb282;
+      padding: 7px 14px;
+      border-radius: 999px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      transition: all 0.2s ease;
+    }
+
+    .stream-play-btn:hover {
+      background: rgba(226, 135, 67, 0.25);
+      border-color: rgba(226, 135, 67, 0.6);
+      color: #fff;
+      transform: translateY(-1px);
+    }
+
+    .stream-play-btn.playing {
+      background: rgba(46, 204, 113, 0.2);
+      border-color: rgba(46, 204, 113, 0.45);
+      color: #2ecc71;
+    }
+
+    .stream-wave-visualizer {
+      display: flex;
+      align-items: flex-end;
+      gap: 3px;
+      height: 24px;
+    }
+
+    .stream-wave-visualizer .v-bar {
+      width: 3px;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 2px;
+      transition: height 0.15s ease;
+    }
+
+    .stream-wave-visualizer.active .v-bar {
+      background: #dfb282;
+      animation: wave-anim 0.8s infinite ease-in-out alternate;
+    }
+
+    .stream-wave-visualizer.active .v-bar:nth-child(1) { animation-delay: 0.1s; }
+    .stream-wave-visualizer.active .v-bar:nth-child(2) { animation-delay: 0.3s; }
+    .stream-wave-visualizer.active .v-bar:nth-child(3) { animation-delay: 0.5s; }
+    .stream-wave-visualizer.active .v-bar:nth-child(4) { animation-delay: 0.2s; }
+    .stream-wave-visualizer.active .v-bar:nth-child(5) { animation-delay: 0.4s; }
+    .stream-wave-visualizer.active .v-bar:nth-child(6) { animation-delay: 0.6s; }
+
+    @keyframes wave-anim {
+      0% { height: 4px; }
+      100% { height: 22px; }
+    }
+
+    .stream-links-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding-top: 4px;
+    }
+
+    .stream-ext-link {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      text-decoration: none;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #e8e2d9;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+    }
+
+    .stream-ext-link:hover {
+      background: rgba(255, 0, 51, 0.15);
+      border-color: rgba(255, 0, 51, 0.4);
+      color: #fff;
     }
 
     #spotify-frame {

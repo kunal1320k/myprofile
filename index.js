@@ -75,7 +75,14 @@ const mediaPanelContainer = document.getElementById('media-panel-container');
 const lyricsView = document.getElementById('lyrics-view');
 const ytView = document.getElementById('yt-view');
 const embedView = document.getElementById('embed-view');
-const ytPlayerFrame = document.getElementById('yt-player-frame');
+const liveStreamAudio = document.getElementById('live-stream-audio');
+const streamPlayBtn = document.getElementById('stream-play-btn');
+const streamPlayText = document.getElementById('stream-play-text');
+const streamPlayIcon = document.getElementById('stream-play-icon');
+const streamVisualizer = document.getElementById('stream-visualizer');
+const streamTimeText = document.getElementById('stream-time-text');
+const streamYtLink = document.getElementById('stream-yt-link');
+const streamYtmLink = document.getElementById('stream-ytm-link');
 const lyricsScroll = document.getElementById('lyrics-scroll');
 const lyricsStatusBadge = document.getElementById('lyrics-status-badge');
 const rawLyricItem = document.getElementById('raw-lyric-item');
@@ -875,13 +882,13 @@ function renderSpotifyUI(state) {
       fetchSyncedLyrics(state.title, state.artist, state.durationMs);
     }
 
-    // Update in-page live player if active
+    // Update in-page live audio stream preview if active
     if (mediaPanelContainer && !mediaPanelContainer.classList.contains('collapsed') && currentActiveMediaView === "video" && state.title) {
-      const query = `${state.title} ${state.artist}`;
-      const newSrc = `https://www.youtube-nocookie.com/embed?listType=search&list=${encodeURIComponent(query)}&autoplay=1`;
-      if (ytPlayerFrame && !ytPlayerFrame.src.includes(encodeURIComponent(state.title))) {
-        ytPlayerFrame.src = newSrc;
-      }
+      fetchTrackAudioStream(state.title, state.artist).then(() => {
+        if (liveStreamAudio && !liveStreamAudio.paused) {
+          startStreamPlayback();
+        }
+      });
     }
   } else {
     // NOT PLAYING LIVE - SHOW YOUR PLAYLIST
@@ -1335,17 +1342,123 @@ function fallbackCount() {
   if (visitorCount) visitorCount.textContent = `✦ ${formatted} unique wanderer${saved === "1" ? "" : "s"}`;
 }
 
-// ── SWITCHABLE MEDIA ACCORDION PANEL (Lyrics / YouTube Stream / Playlist) ────
+// ── SWITCHABLE MEDIA ACCORDION PANEL (Lyrics / Audio Stream / Playlist) ────
 let currentActiveMediaView = ""; // "lyrics" | "video" | "playlist" | ""
+let currentStreamTrackKey = "";
+let currentStreamAudioUrl = "";
 
-function switchMediaView(viewName) {
+async function fetchTrackAudioStream(title, artist) {
+  const trackKey = `${title}_${artist}`.toLowerCase();
+  if (currentStreamTrackKey === trackKey && currentStreamAudioUrl) {
+    return currentStreamAudioUrl;
+  }
+
+  const cleanTitle = title
+    .replace(/\s*\(feat\..*?\)/i, '')
+    .replace(/\s*\[feat\..*?\]/i, '')
+    .replace(/\s*\(from.*?\)/i, '')
+    .replace(/\s*-\s*.*from.*/i, '')
+    .replace(/\s*-\s*.*version.*/i, '')
+    .replace(/\s*-\s*.*remaster.*/i, '')
+    .trim();
+
+  let cleanArtist = artist.split(/\u2022|;|,|-|\|/)[0].trim();
+  if (!cleanArtist) cleanArtist = artist;
+
+  const query = `${cleanTitle} ${cleanArtist}`;
+
+  // Update direct YouTube / YouTube Music links
+  if (streamYtLink) {
+    streamYtLink.href = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
+  }
+  if (streamYtmLink) {
+    streamYtmLink.href = `https://music.youtube.com/search?q=${encodeURIComponent(query)}`;
+  }
+
+  try {
+    const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(query)}&media=music&limit=1`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data.results && data.results.length > 0 && data.results[0].previewUrl) {
+        currentStreamTrackKey = trackKey;
+        currentStreamAudioUrl = data.results[0].previewUrl;
+        if (liveStreamAudio) {
+          liveStreamAudio.src = currentStreamAudioUrl;
+        }
+        return currentStreamAudioUrl;
+      }
+    }
+  } catch (err) {
+    console.warn("Stream preview fetch error:", err);
+  }
+  return null;
+}
+
+function startStreamPlayback() {
+  if (!liveStreamAudio) return;
+
+  // Pause theme background music to prevent clash
+  if (themeAudio && !themeAudio.paused) {
+    themeAudio.pause();
+    isMuted = true;
+    if (muteText) muteText.textContent = "unmute";
+    const muteIcon = document.getElementById('mute-icon');
+    if (muteIcon) {
+      muteIcon.innerHTML = `<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line>`;
+    }
+  }
+
+  liveStreamAudio.play().then(() => {
+    if (streamPlayBtn) streamPlayBtn.classList.add('playing');
+    if (streamPlayText) streamPlayText.textContent = "pause audio";
+    if (streamVisualizer) streamVisualizer.classList.add('active');
+  }).catch(err => {
+    console.warn("Stream audio play error:", err);
+  });
+}
+
+function pauseStreamPlayback() {
+  if (!liveStreamAudio) return;
+  liveStreamAudio.pause();
+  if (streamPlayBtn) streamPlayBtn.classList.remove('playing');
+  if (streamPlayText) streamPlayText.textContent = "listen preview";
+  if (streamVisualizer) streamVisualizer.classList.remove('active');
+}
+
+if (streamPlayBtn) {
+  streamPlayBtn.addEventListener('click', () => {
+    if (!liveStreamAudio) return;
+    if (liveStreamAudio.paused) {
+      startStreamPlayback();
+    } else {
+      pauseStreamPlayback();
+    }
+  });
+}
+
+if (liveStreamAudio) {
+  liveStreamAudio.addEventListener('timeupdate', () => {
+    if (streamTimeText && liveStreamAudio.duration) {
+      const cur = formatTime(liveStreamAudio.currentTime * 1000);
+      const dur = formatTime(liveStreamAudio.duration * 1000);
+      streamTimeText.textContent = `${cur} / ${dur}`;
+    }
+  });
+
+  liveStreamAudio.addEventListener('ended', () => {
+    pauseStreamPlayback();
+    if (streamTimeText) streamTimeText.textContent = "0:00 / 0:30";
+  });
+}
+
+async function switchMediaView(viewName) {
   if (!mediaPanelContainer) return;
 
   // If clicking the active view, collapse the panel
   if (currentActiveMediaView === viewName && !mediaPanelContainer.classList.contains('collapsed')) {
     mediaPanelContainer.classList.add('collapsed');
     currentActiveMediaView = "";
-    if (ytPlayerFrame) ytPlayerFrame.src = "";
+    pauseStreamPlayback();
     updateMediaButtonStates();
     return;
   }
@@ -1361,32 +1474,19 @@ function switchMediaView(viewName) {
 
   if (viewName === "lyrics") {
     if (lyricsView) lyricsView.classList.remove('hidden');
-    if (ytPlayerFrame) ytPlayerFrame.src = "";
+    pauseStreamPlayback();
   } else if (viewName === "video") {
     if (ytView) ytView.classList.remove('hidden');
-    // Start YouTube playback
+    // Fetch and start audio stream preview
     const isPlaying = currentPlaybackState.isPlaying;
     const songName = isPlaying ? currentPlaybackState.title : SPOTIFY_CONFIG.playlist.title;
     const songArtist = isPlaying ? currentPlaybackState.artist : SPOTIFY_CONFIG.playlist.artist;
-    const query = `${songName} ${songArtist}`;
-
-    // Pause theme background audio
-    if (themeAudio && !themeAudio.paused) {
-      themeAudio.pause();
-      isMuted = true;
-      if (muteText) muteText.textContent = "unmute";
-      const muteIcon = document.getElementById('mute-icon');
-      if (muteIcon) {
-        muteIcon.innerHTML = `<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line>`;
-      }
-    }
-
-    if (ytPlayerFrame) {
-      ytPlayerFrame.src = `https://www.youtube-nocookie.com/embed?listType=search&list=${encodeURIComponent(query)}&autoplay=1`;
-    }
+    
+    await fetchTrackAudioStream(songName, songArtist);
+    startStreamPlayback();
   } else if (viewName === "playlist") {
     if (embedView) embedView.classList.remove('hidden');
-    if (ytPlayerFrame) ytPlayerFrame.src = "";
+    pauseStreamPlayback();
   }
 
   updateMediaButtonStates();
@@ -1395,7 +1495,7 @@ function switchMediaView(viewName) {
 function updateMediaButtonStates() {
   const isCollapsed = !mediaPanelContainer || mediaPanelContainer.classList.contains('collapsed');
   if (toggleLyricsText) toggleLyricsText.textContent = (!isCollapsed && currentActiveMediaView === "lyrics") ? "hide lyrics" : "lyrics";
-  if (toggleYtPlayerText) toggleYtPlayerText.textContent = (!isCollapsed && currentActiveMediaView === "video") ? "stop video" : "video";
+  if (toggleYtPlayerText) toggleYtPlayerText.textContent = (!isCollapsed && currentActiveMediaView === "video") ? "stop audio" : "listen live";
   if (toggleEmbedText) toggleEmbedText.textContent = (!isCollapsed && currentActiveMediaView === "playlist") ? "hide playlist" : "playlist";
 }
 
