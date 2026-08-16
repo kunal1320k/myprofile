@@ -69,12 +69,17 @@ const toggleEmbedBtn = document.getElementById('toggle-embed-btn');
 const toggleEmbedText = document.getElementById('toggle-embed-text');
 const toggleLyricsBtn = document.getElementById('toggle-lyrics-btn');
 const toggleLyricsText = document.getElementById('toggle-lyrics-text');
-const lyricsContainer = document.getElementById('lyrics-container');
+const toggleYtPlayerBtn = document.getElementById('toggle-yt-player-btn');
+const toggleYtPlayerText = document.getElementById('toggle-yt-player-text');
+const mediaPanelContainer = document.getElementById('media-panel-container');
+const lyricsView = document.getElementById('lyrics-view');
+const ytView = document.getElementById('yt-view');
+const embedView = document.getElementById('embed-view');
+const ytPlayerFrame = document.getElementById('yt-player-frame');
 const lyricsScroll = document.getElementById('lyrics-scroll');
 const lyricsStatusBadge = document.getElementById('lyrics-status-badge');
 const rawLyricItem = document.getElementById('raw-lyric-item');
 const rawLyricText = document.getElementById('raw-lyric-text');
-const embedContainer = document.getElementById('embed-container');
 const rawViewsCount = document.getElementById('raw-views-count');
 const rawSpotifyText = document.getElementById('raw-spotify-text');
 const visitorCount = document.getElementById('visitor-count');
@@ -82,7 +87,7 @@ const visitorPill = document.getElementById('visitor-pill');
 
 let revealed = false;
 let isMuted = false;
-let isRevealing = false; // FIX: blocks rebuild during clip wipe
+let isRevealing = false;
 
 // ── SEEDED RANDOM GENERATOR FOR TREE RESIZING ──────────────────────────────
 let randomSource = Math.random;
@@ -869,6 +874,15 @@ function renderSpotifyUI(state) {
     if (state.title) {
       fetchSyncedLyrics(state.title, state.artist, state.durationMs);
     }
+
+    // Update in-page live player if active
+    if (mediaPanelContainer && !mediaPanelContainer.classList.contains('collapsed') && currentActiveMediaView === "video" && state.title) {
+      const query = `${state.title} ${state.artist}`;
+      const newSrc = `https://www.youtube-nocookie.com/embed?listType=search&list=${encodeURIComponent(query)}&autoplay=1`;
+      if (ytPlayerFrame && !ytPlayerFrame.src.includes(encodeURIComponent(state.title))) {
+        ytPlayerFrame.src = newSrc;
+      }
+    }
   } else {
     // NOT PLAYING LIVE - SHOW YOUR PLAYLIST
     if (trackTitle) {
@@ -1088,7 +1102,9 @@ function highlightLyricIndex(idx) {
   lines.forEach((l, i) => {
     if (i === idx) {
       l.className = 'lyric-line active';
-      l.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      // Smoothly scroll only the lyrics inner container, never the window or outer page!
+      const targetScrollTop = l.offsetTop - (lyricsScroll.clientHeight / 2) + (l.clientHeight / 2);
+      lyricsScroll.scrollTo({ top: targetScrollTop, behavior: 'smooth' });
     } else if (i < idx) {
       l.className = 'lyric-line past';
     } else {
@@ -1319,20 +1335,80 @@ function fallbackCount() {
   if (visitorCount) visitorCount.textContent = `✦ ${formatted} unique wanderer${saved === "1" ? "" : "s"}`;
 }
 
-// Toggle lyrics accordion
-if (toggleLyricsBtn) {
-  toggleLyricsBtn.addEventListener('click', () => {
-    const isCollapsed = lyricsContainer.classList.toggle('collapsed');
-    toggleLyricsText.textContent = isCollapsed ? "lyrics" : "hide lyrics";
-  });
+// ── SWITCHABLE MEDIA ACCORDION PANEL (Lyrics / YouTube Stream / Playlist) ────
+let currentActiveMediaView = ""; // "lyrics" | "video" | "playlist" | ""
+
+function switchMediaView(viewName) {
+  if (!mediaPanelContainer) return;
+
+  // If clicking the active view, collapse the panel
+  if (currentActiveMediaView === viewName && !mediaPanelContainer.classList.contains('collapsed')) {
+    mediaPanelContainer.classList.add('collapsed');
+    currentActiveMediaView = "";
+    if (ytPlayerFrame) ytPlayerFrame.src = "";
+    updateMediaButtonStates();
+    return;
+  }
+
+  // Activate the selected view
+  currentActiveMediaView = viewName;
+  mediaPanelContainer.classList.remove('collapsed');
+
+  // Hide all views first
+  if (lyricsView) lyricsView.classList.add('hidden');
+  if (ytView) ytView.classList.add('hidden');
+  if (embedView) embedView.classList.add('hidden');
+
+  if (viewName === "lyrics") {
+    if (lyricsView) lyricsView.classList.remove('hidden');
+    if (ytPlayerFrame) ytPlayerFrame.src = "";
+  } else if (viewName === "video") {
+    if (ytView) ytView.classList.remove('hidden');
+    // Start YouTube playback
+    const isPlaying = currentPlaybackState.isPlaying;
+    const songName = isPlaying ? currentPlaybackState.title : SPOTIFY_CONFIG.playlist.title;
+    const songArtist = isPlaying ? currentPlaybackState.artist : SPOTIFY_CONFIG.playlist.artist;
+    const query = `${songName} ${songArtist}`;
+
+    // Pause theme background audio
+    if (themeAudio && !themeAudio.paused) {
+      themeAudio.pause();
+      isMuted = true;
+      if (muteText) muteText.textContent = "unmute";
+      const muteIcon = document.getElementById('mute-icon');
+      if (muteIcon) {
+        muteIcon.innerHTML = `<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line>`;
+      }
+    }
+
+    if (ytPlayerFrame) {
+      ytPlayerFrame.src = `https://www.youtube-nocookie.com/embed?listType=search&list=${encodeURIComponent(query)}&autoplay=1`;
+    }
+  } else if (viewName === "playlist") {
+    if (embedView) embedView.classList.remove('hidden');
+    if (ytPlayerFrame) ytPlayerFrame.src = "";
+  }
+
+  updateMediaButtonStates();
 }
 
-// Toggle embed playlist
+function updateMediaButtonStates() {
+  const isCollapsed = !mediaPanelContainer || mediaPanelContainer.classList.contains('collapsed');
+  if (toggleLyricsText) toggleLyricsText.textContent = (!isCollapsed && currentActiveMediaView === "lyrics") ? "hide lyrics" : "lyrics";
+  if (toggleYtPlayerText) toggleYtPlayerText.textContent = (!isCollapsed && currentActiveMediaView === "video") ? "stop video" : "video";
+  if (toggleEmbedText) toggleEmbedText.textContent = (!isCollapsed && currentActiveMediaView === "playlist") ? "hide playlist" : "playlist";
+}
+
+if (toggleLyricsBtn) {
+  toggleLyricsBtn.addEventListener('click', () => switchMediaView('lyrics'));
+}
+
+if (toggleYtPlayerBtn) {
+  toggleYtPlayerBtn.addEventListener('click', () => switchMediaView('video'));
+}
+
 if (toggleEmbedBtn) {
-  toggleEmbedBtn.addEventListener('click', () => {
-    const isCollapsed = embedContainer.classList.toggle('collapsed');
-    toggleEmbedText.textContent = isCollapsed ? "playlist" : "hide embed";
-  });
+  toggleEmbedBtn.addEventListener('click', () => switchMediaView('playlist'));
 }
 
 // ── LAST.FM REAL-TIME 24/7 SPOTIFY CLOUD TRACKER ─────────────────────────

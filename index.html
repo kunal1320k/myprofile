@@ -123,19 +123,48 @@
               </div>
             </div>
 
-            <!-- Live Synced Lyrics Box -->
-            <div class="lyrics-container collapsed" id="lyrics-container">
-              <div class="lyrics-top-bar">
-                <span class="lyrics-header-tag">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon" style="margin-right:4px;vertical-align:middle;">
-                    <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
-                  </svg>
-                  synced lyrics
-                </span>
-                <span class="lyrics-status-badge" id="lyrics-status-badge">offline</span>
+            <!-- Switchable Media Panel (Lyrics / YouTube Stream / Playlist Embed) -->
+            <div class="media-panel-container collapsed" id="media-panel-container">
+              <!-- View 1: Synced Lyrics -->
+              <div class="media-view" id="lyrics-view">
+                <div class="lyrics-top-bar">
+                  <span class="lyrics-header-tag">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon" style="margin-right:4px;vertical-align:middle;">
+                      <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
+                    </svg>
+                    synced lyrics
+                  </span>
+                  <span class="lyrics-status-badge" id="lyrics-status-badge">offline</span>
+                </div>
+                <div class="lyrics-scroll" id="lyrics-scroll">
+                  <p class="lyric-line-placeholder">no track playing right now — start listening on spotify or yt music</p>
+                </div>
               </div>
-              <div class="lyrics-scroll" id="lyrics-scroll">
-                <p class="lyric-line-placeholder">no track playing right now — start listening on spotify or yt music</p>
+
+              <!-- View 2: YouTube Live Track Player -->
+              <div class="media-view hidden" id="yt-view">
+                <div class="yt-player-top">
+                  <span class="yt-player-label">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon" style="margin-right:4px;vertical-align:middle;">
+                      <polygon points="6 3 20 12 6 21 6 3"/>
+                    </svg>
+                    youtube live stream
+                  </span>
+                </div>
+                <iframe id="yt-player-frame"
+                  src=""
+                  allow="autoplay; encrypted-media; picture-in-picture"
+                  allowfullscreen
+                  loading="lazy"
+                  title="YouTube live player"></iframe>
+              </div>
+
+              <!-- View 3: Spotify Playlist Embed -->
+              <div class="media-view hidden" id="embed-view">
+                <iframe id="spotify-frame"
+                  src="https://open.spotify.com/embed/playlist/14d7SJJHjhwEerGgKaUa4J?utm_source=generator"
+                  allow="autoplay; encrypted-media; clipboard-write; fullscreen; picture-in-picture" loading="lazy"
+                  title="spotify"></iframe>
               </div>
             </div>
 
@@ -161,6 +190,12 @@
                     <line x1="12" x2="12" y1="19" y2="22"/>
                   </svg>
                   <span id="toggle-lyrics-text">lyrics</span>
+                </button>
+                <button id="toggle-yt-player-btn" class="spotify-btn secondary-btn" type="button" title="Play live track video on YouTube">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon" style="margin-right:4px;vertical-align:middle;">
+                    <polygon points="6 3 20 12 6 21 6 3"/>
+                  </svg>
+                  <span id="toggle-yt-player-text">video</span>
                 </button>
                 <button id="toggle-embed-btn" class="spotify-btn secondary-btn" type="button">
                   <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon" style="margin-right:4px;vertical-align:middle;">
@@ -192,14 +227,6 @@
                 </button>
               </div>
             </div>
-          </div>
-
-          <!-- Collapsible Spotify Embed Frame -->
-          <div id="embed-container" class="embed-container collapsed">
-            <iframe id="spotify-frame"
-              src="https://open.spotify.com/embed/playlist/14d7SJJHjhwEerGgKaUa4J?utm_source=generator"
-              allow="autoplay; encrypted-media; clipboard-write; fullscreen; picture-in-picture" loading="lazy"
-              title="spotify"></iframe>
           </div>
         </div>
       </div>
