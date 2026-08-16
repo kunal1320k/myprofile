@@ -44,29 +44,31 @@ If you already use Spotify on your computer or phone while logged into Discord, 
    ```
 6. Push to GitHub! Whenever you listen to Spotify, your website will automatically show the live track, album artwork, and animated equalizer in real time.
 
----
-
-### Option 2: Direct Spotify Web API (Serverless Function)
-
-If you prefer direct Spotify OAuth without Discord:
-
-1. Create an app in the [Spotify Developer Dashboard](https://developer.spotify.com/dashboard).
-2. Set Redirect URI to `http://localhost:3000/callback` (or your authorization helper).
-3. Get your `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET`, and generate a `SPOTIFY_REFRESH_TOKEN` with scope `user-read-currently-playing,user-read-playback-state,user-read-recently-played`.
-4. Deploy [`api/spotify.js`](file:///api/spotify.js) to **Vercel** or [`api/worker.js`](file:///api/worker.js) to **Cloudflare Workers**.
-5. Set your deployed API URL in [`index.js`](file:///index.js):
-   ```javascript
-   const SPOTIFY_CONFIG = {
-     apiEndpoint: "https://your-spotify-api.vercel.app/api/spotify",
-     // ...
-   };
-   ```
-
----
-
 ## Visitor Counter
 
-The counter uses `api.counterapi.dev` for a persistent shared total. A browser-local flag prevents repeat increments from the same browser without collecting or storing visitors' IP addresses. A static GitHub Pages site cannot make an IP address both private and reliably unique; use a Cloudflare Worker with privacy-reviewed server-side deduplication if that level of measurement is required.
+The visitor counter is designed for a Cloudflare Worker with a Durable Object. It stores a stable browser identifier plus a network abuse guard only as HMAC hashes—never raw IP addresses. This gives a much stronger approximation of unique people than local storage alone, although anonymous websites cannot prove one browser equals one person.
+
+### Deploy the counter
+
+1. Install and sign in to Cloudflare Wrangler, then deploy this repository's Worker:
+
+   ```bash
+   npm install -g wrangler
+   wrangler login
+   wrangler deploy
+   ```
+
+2. Create a long random HMAC salt and save it as a Worker secret:
+
+   ```bash
+   wrangler secret put VISITOR_HASH_SALT
+   ```
+
+3. Set `VISITOR_COUNTER_CONFIG.endpoint` in [`index.js`](index.js) to your deployed Worker URL followed by `/visitor`.
+
+4. If you use a custom portfolio domain, set `ALLOWED_ORIGINS` as a Worker variable to a comma-separated allowlist, such as `https://your-domain.example,https://kunal1320k.github.io`.
+
+The Durable Object starts at `0` on its first request. Resetting it later is an administrative change, not a public browser action.
 
 ---
 

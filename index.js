@@ -20,9 +20,6 @@ const SPOTIFY_CONFIG = {
   // Option 2: Discord ID for Lanyard real-time WebSocket / REST
   discordId: "1085524274774802515",
 
-  // Option 3: Custom Serverless API Endpoint (from Vercel / Cloudflare Worker)
-  apiEndpoint: "",
-
   // kunal1320k's Spotify Playlist
   playlist: {
     id: "14d7SJJHjhwEerGgKaUa4J",
@@ -33,12 +30,14 @@ const SPOTIFY_CONFIG = {
   }
 };
 
-const PLAYLIST = SPOTIFY_CONFIG.playlist.id;
-const PLAYLIST_URL = SPOTIFY_CONFIG.playlist.url;
+const VISITOR_COUNTER_CONFIG = {
+  // Set this to the Worker URL after deploying `api/worker.js`, for example:
+  // "https://kunal-profile-services.<account>.workers.dev/visitor"
+  endpoint: ""
+};
 
 const rawRoot = document.getElementById('raw-root');
 const aestheticRoot = document.getElementById('aesthetic-root');
-const dropWrap = document.getElementById('drop-wrap');
 const dropBtn = document.getElementById('drop');
 const waveRing = document.getElementById('wave-ring');
 const treeCanvas = document.getElementById('tree-canvas');
@@ -46,7 +45,6 @@ const canvas = document.getElementById('leaves-canvas');
 const treeCtx = treeCanvas.getContext('2d', { alpha: true });
 const ctx = canvas.getContext('2d', { alpha: true });
 const linksGrid = document.getElementById('links-grid');
-const spotifyFrame = document.getElementById('spotify-frame');
 const themeAudio = document.getElementById('theme-audio');
 const muteBtn = document.getElementById('mute-btn');
 const muteText = document.getElementById('mute-text');
@@ -77,12 +75,9 @@ const lyricsView = document.getElementById('lyrics-view');
 const embedView = document.getElementById('embed-view');
 const lyricsScroll = document.getElementById('lyrics-scroll');
 const lyricsStatusBadge = document.getElementById('lyrics-status-badge');
-const rawLyricItem = document.getElementById('raw-lyric-item');
-const rawLyricText = document.getElementById('raw-lyric-text');
 const rawViewsCount = document.getElementById('raw-views-count');
 const rawSpotifyText = document.getElementById('raw-spotify-text');
 const visitorCount = document.getElementById('visitor-count');
-const visitorPill = document.getElementById('visitor-pill');
 
 let revealed = false;
 let isMuted = false;
@@ -100,10 +95,6 @@ function mulberry32(a) {
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   }
 }
-
-// ── AUDIO ANALYSER (beat-reactive leaves disabled) ─────────────────────────
-const beatEnergy = 0;
-const beatSmooth = 0;
 
 // render links
 LINKS.forEach(l => {
@@ -525,25 +516,17 @@ function initLeaves() {
 }
 
 function drawLeaves(dt, t) {
-  const beatBurst = beatEnergy;
-  const beatAmbient = beatSmooth;
-  const speedBoost = 1 + beatBurst * 2.8;
-  const spinBoost = 1 + beatBurst * 4.0;
-  const wobbleBoost = 1 + beatAmbient * 1.4;
-  const scaleBoost = 1 + beatBurst * 0.18;
   const wind = Math.sin(t * 0.00032) * 1.1 + Math.sin(t * 0.00078) * 0.55 + Math.cos(t * 0.00019) * 0.35;
 
   ctx.clearRect(0, 0, W, H);
   for (let i = 0; i < leaves.length; i++) {
     const leaf = leaves[i];
-    const leafBeat = beatBurst * (0.7 + (i % 5) * 0.12);
-    const leafAmbient = beatAmbient * (0.8 + (i % 3) * 0.1);
-    leaf.wobble += leaf.wobbleSpeed * dt * (1 + leafAmbient * 0.6);
+    leaf.wobble += leaf.wobbleSpeed * dt;
     leaf.vx += (wind * 0.0065 + Math.sin(leaf.wobble) * 0.007) * dt;
     leaf.vx *= Math.pow(0.9965, dt);
-    leaf.x += (leaf.vx + Math.cos(leaf.wobble) * leaf.wobbleAmp * wobbleBoost * 0.46 + wind * 0.38) * dt;
-    leaf.y += leaf.vy * (0.7 + leaf.depth * 0.6) * speedBoost * dt;
-    leaf.rot += (leaf.rotSpeed * spinBoost + Math.sin(leaf.wobble * 0.6) * 0.006) * dt;
+    leaf.x += (leaf.vx + Math.cos(leaf.wobble) * leaf.wobbleAmp * 0.46 + wind * 0.38) * dt;
+    leaf.y += leaf.vy * (0.7 + leaf.depth * 0.6) * dt;
+    leaf.rot += (leaf.rotSpeed + Math.sin(leaf.wobble * 0.6) * 0.006) * dt;
 
     if (leaf.y > H + 90) resetLeaf(leaf, false);
     if (leaf.x < -120) leaf.x = W + 80;
@@ -552,10 +535,10 @@ function drawLeaves(dt, t) {
     const image = leafImgs[leaf.imgIdx];
     if (!image || !image.complete) continue;
     ctx.save();
-    ctx.globalAlpha = Math.min((leaf.opacity + leafBeat * 0.22 * (1 - leaf.opacity)) * leaf.depth, 1);
+    ctx.globalAlpha = Math.min(leaf.opacity * leaf.depth, 1);
     ctx.translate(leaf.x, leaf.y);
     ctx.rotate(leaf.rot);
-    ctx.scale(leaf.flip * scaleBoost, scaleBoost);
+    ctx.scale(leaf.flip, 1);
     if (!isMobile()) {
       ctx.shadowColor = 'rgba(0,0,0,0.18)';
       ctx.shadowBlur = 8 * leaf.depth;
@@ -640,144 +623,6 @@ document.addEventListener('visibilitychange', () => {
   }
 });
 addEventListener('pagehide', stopScene, { passive: true });
-
-/* Previous uncapped canvas loop retained below for reference only.
-// FIX: Use stable dimensions, handle Chrome address bar hide/show without flicker
-let W = 0, H = 0, DPR = 1;
-function getViewportHeight() {
-  // visualViewport is more stable on Chrome mobile
-  return window.visualViewport ? window.visualViewport.height : innerHeight;
-}
-function resizeCanvas() {
-  const newW = innerWidth;
-  // On mobile, use the largest height (lvh) to avoid resize flicker when URL bar hides
-  const newH = window.innerWidth < 768 ? Math.max(innerHeight, document.documentElement.clientHeight, getViewportHeight()) : innerHeight;
-  const newDPR = (newW < 768) ? 1 : Math.min(devicePixelRatio || 1, 2);
-
-  // Only perform heavy canvas dimension resizing if size or scale actually changed
-  if (W === newW && H === newH && DPR === newDPR) return;
-
-  W = newW; H = newH; DPR = newDPR;
-  canvas.width = W * DPR; canvas.height = H * DPR;
-  canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
-  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-}
-let lastW = innerWidth;
-resizeCanvas();
-
-function isMobile() { return W < 768 }
-
-let leaves = [];
-function initLeaves() {
-  const count = isMobile() ? 22 : 38;
-  leaves = [];
-  for (let i = 0; i < count; i++) {
-    leaves.push({
-      x: Math.random() * W,
-      y: Math.random() * H - H,
-      size: (isMobile() ? 14 : 19) + Math.random() * (isMobile() ? 20 : 30),
-      vx: (Math.random() - 0.5) * 0.7,
-      vy: 0.38 + Math.random() * 0.95,
-      rot: Math.random() * Math.PI * 2,
-      rotSpeed: (Math.random() - 0.5) * 0.032,
-      wobble: Math.random() * Math.PI * 2,
-      wobbleSpeed: 0.006 + Math.random() * 0.014,
-      wobbleAmp: 0.7 + Math.random() * 1.7,
-      depth: 0.55 + Math.random() * 0.9,
-      imgIdx: Math.floor(Math.random() * 3),
-      flip: Math.random() > 0.5 ? 1 : -1,
-      opacity: 0.72 + Math.random() * 0.28
-    });
-  }
-}
-initLeaves();
-// FIX: update canvas height on address-bar hide/show but don't re-init leaves (prevents flicker)
-let resizeTimeout;
-addEventListener('resize', () => {
-  clearTimeout(resizeTimeout);
-  resizeTimeout = setTimeout(() => {
-    const newW = innerWidth;
-    const widthChanged = newW !== lastW;
-    // Always update canvas size to match viewport
-    resizeCanvas();
-    if (widthChanged) {
-      lastW = newW;
-      initLeaves();
-    }
-  }, 100);
-}, { passive: true });
-// Also listen to visualViewport resize (Chrome mobile)
-if (window.visualViewport) {
-  window.visualViewport.addEventListener('resize', () => {
-    // Only resize canvas, not leaves
-    resizeCanvas();
-  }, { passive: true });
-}
-
-// uncapped RAF loop with delta
-let lastT = performance.now();
-let rafId;
-function frame(t) {
-  const dt = Math.min((t - lastT) / 16.666, 3); // normalize to 60fps base, but uncapped
-  lastT = t;
-
-  // ── Beat update ──────────────────────────────────────────────────────────
-  updateBeat();
-  // Beat multipliers applied to leaf physics
-  const beatBurst   = beatEnergy;                        // 0..1, snappy
-  const beatAmbient = beatSmooth;                        // 0..1, slow
-  const speedBoost  = 1 + beatBurst  * 2.8;             // up to 3.8× fall speed
-  const spinBoost   = 1 + beatBurst  * 4.0;             // extra spin on beat
-  const wobbleBoost = 1 + beatAmbient * 1.4;            // gentle sway modulation
-  const scaleBoost  = 1 + beatBurst  * 0.18;            // subtle size pulse
-
-  ctx.clearRect(0, 0, W, H);
-  const wind = Math.sin(t * 0.00032) * 1.1 + Math.sin(t * 0.00078) * 0.55 + Math.cos(t * 0.00019) * 0.35;
-
-  for (let i = 0; i < leaves.length; i++) {
-    const m = leaves[i];
-    // Each leaf has a slightly different phase so they don't all move identically
-    const leafBeat = beatBurst  * (0.7 + (i % 5) * 0.12);
-    const leafAmb  = beatAmbient * (0.8 + (i % 3) * 0.1);
-
-    m.wobble += m.wobbleSpeed * dt * (1 + leafAmb * 0.6);
-    m.vx += (wind * 0.0065 + Math.sin(m.wobble) * 0.007) * dt;
-    m.vx *= Math.pow(0.9965, dt);
-    m.x += (m.vx + Math.cos(m.wobble) * m.wobbleAmp * wobbleBoost * 0.46 + wind * 0.38) * dt;
-    // Beat makes leaves fall faster
-    m.y += m.vy * (0.7 + m.depth * 0.6) * speedBoost * dt;
-    // Beat increases rotation speed
-    m.rot += (m.rotSpeed * spinBoost + Math.sin(m.wobble * 0.6) * 0.006) * dt;
-
-    if (m.y > H + 90) { m.y = -90 - Math.random() * 200; m.x = Math.random() * W; m.vx = (Math.random() - 0.5) * 0.7; }
-    if (m.x < -120) m.x = W + 80;
-    if (m.x > W + 120) m.x = -80;
-
-    const img = leafImgs[m.imgIdx];
-    if (!img || !img.complete) continue;
-    ctx.save();
-    // Opacity pulses slightly on beat
-    const opacityPulse = m.opacity + leafBeat * 0.22 * (1 - m.opacity);
-    ctx.globalAlpha = Math.min(opacityPulse * m.depth, 1);
-    ctx.translate(m.x, m.y);
-    ctx.rotate(m.rot);
-    // Scale pulse: leaves briefly enlarge on beat drop
-    ctx.scale(m.flip * scaleBoost, scaleBoost);
-    // soft shadow only on desktop for perf
-    if (!isMobile()) {
-      ctx.shadowColor = "rgba(0,0,0,0.18)";
-      ctx.shadowBlur = 8 * m.depth;
-      ctx.shadowOffsetY = 4 * m.depth;
-    }
-    const h = m.size * (img.height / img.width || 1);
-    ctx.drawImage(img, -m.size * 0.5, -h * 0.5, m.size, h);
-    ctx.restore();
-  }
-  rafId = requestAnimationFrame(frame);
-}
-rafId = requestAnimationFrame(frame);
-
-*/
 
 // ── SPOTIFY REAL-TIME TRACKING & VISITOR COUNTER ───────────────────────────
 
@@ -972,7 +817,6 @@ function renderSpotifyUI(state) {
       lyricsScroll.innerHTML = '<p class="lyric-line-placeholder">no track playing right now — start listening on spotify or yt music</p>';
     }
     if (lyricsStatusBadge) lyricsStatusBadge.textContent = "offline";
-    if (rawLyricItem) rawLyricItem.style.display = "none";
   }
 
   updateProgressBar();
@@ -1197,10 +1041,6 @@ function highlightLyricIndex(idx) {
     }
   });
 
-  if (rawLyricText && currentLyrics[idx]) {
-    rawLyricText.textContent = currentLyrics[idx].text;
-    if (rawLyricItem) rawLyricItem.style.display = "flex";
-  }
 }
 
 function syncActiveLyric(progressMs) {
@@ -1245,12 +1085,7 @@ let heartbeatTimer = null;
 
 function connectLanyard() {
   if (!SPOTIFY_CONFIG.discordId || SPOTIFY_CONFIG.discordId === "YOUR_DISCORD_USER_ID") {
-    if (SPOTIFY_CONFIG.apiEndpoint) {
-      pollCustomEndpoint();
-      setInterval(pollCustomEndpoint, 6000);
-    } else {
-      renderSpotifyUI(currentPlaybackState);
-    }
+    renderSpotifyUI(currentPlaybackState);
     return;
   }
 
@@ -1355,68 +1190,23 @@ async function fetchLanyardRest() {
   }
 }
 
-async function pollCustomEndpoint() {
-  if (!SPOTIFY_CONFIG.apiEndpoint) return;
-  try {
-    const res = await fetch(SPOTIFY_CONFIG.apiEndpoint);
-    if (res.ok) {
-      const data = await res.json();
-      if (data && data.is_playing && data.title) {
-        const receivedAt = Date.now();
-        const serverTimestamp = Number(data.timestamp);
-        // Account for transport latency only when the server and browser clocks
-        // are plausibly aligned; otherwise the received time is the safe anchor.
-        const responseAge = serverTimestamp && Math.abs(receivedAt - serverTimestamp) < 15000
-          ? Math.max(0, receivedAt - serverTimestamp)
-          : 0;
-        currentPlaybackState = {
-          isPlaying: true,
-          title: data.title,
-          artist: `${data.artist || "Spotify Artist"} • ${data.album || ""}`,
-          albumArt: data.album_art_url || SPOTIFY_CONFIG.playlist.albumArt,
-          songUrl: data.song_url || SPOTIFY_CONFIG.playlist.url,
-          progressMs: Math.max(0, Number(data.progress_ms) || 0) + responseAge,
-          durationMs: data.duration_ms || 0,
-          updatedAt: receivedAt,
-          timingSource: "api"
-        };
-      } else {
-        currentPlaybackState = {
-          isPlaying: false,
-          title: SPOTIFY_CONFIG.playlist.title,
-          artist: SPOTIFY_CONFIG.playlist.artist,
-          albumArt: SPOTIFY_CONFIG.playlist.albumArt,
-          songUrl: SPOTIFY_CONFIG.playlist.url,
-          progressMs: 0,
-          durationMs: 0,
-          updatedAt: Date.now()
-        };
-      }
-      renderSpotifyUI(currentPlaybackState);
-    }
-  } catch (e) {
-    console.warn("Custom Spotify API error:", e);
-  }
-}
-
 // ── UNIQUE VISITOR COUNTER ──────────────────────────────────────────────────
 async function initVisitorCounter() {
-  const namespace = "kunal1320k";
-  const key = "profile";
-  const visitorKey = "profile_visitor_counted";
-  // A static site cannot safely identify people by IP.  The public counter gives
-  // us a persistent shared total while this flag prevents repeat increments from
-  // the same browser without collecting personal data.
-  const isReturningVisitor = localStorage.getItem(visitorKey);
-  const action = isReturningVisitor ? "get" : "up";
-  const endpoint = `https://api.counterapi.dev/v1/${namespace}/${key}/${action}`;
+  if (!VISITOR_COUNTER_CONFIG.endpoint) {
+    fallbackCount();
+    return;
+  }
 
   try {
-    const res = await fetch(endpoint, { cache: 'no-store' });
+    const res = await fetch(VISITOR_COUNTER_CONFIG.endpoint, {
+      method: "POST",
+      cache: "no-store",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ clientId: getVisitorId() })
+    });
     if (res.ok) {
       const data = await res.json();
-      const count = Number(data.count ?? data.value) || 17;
-      localStorage.setItem(visitorKey, "true");
+      const count = Number(data.count ?? data.value) || 0;
       localStorage.setItem("kunal1320k_last_known_count", String(count));
       animateCount(count);
     } else {
@@ -1425,6 +1215,18 @@ async function initVisitorCounter() {
   } catch (e) {
     fallbackCount();
   }
+}
+
+function getVisitorId() {
+  const storageKey = "kunal1320k_visitor_id_v1";
+  let clientId = localStorage.getItem(storageKey);
+  if (clientId) return clientId;
+
+  clientId = typeof crypto.randomUUID === "function"
+    ? crypto.randomUUID()
+    : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+  localStorage.setItem(storageKey, clientId);
+  return clientId;
 }
 
 function animateCount(target) {
@@ -1655,11 +1457,7 @@ if (shuffleBtn) {
     if (syncText) syncText.textContent = "syncing...";
     if (syncIcon) syncIcon.style.animation = "spin 0.7s linear";
     fetchLastFmNowPlaying();
-    if (SPOTIFY_CONFIG.apiEndpoint) {
-      pollCustomEndpoint();
-    } else {
-      fetchLanyardRest();
-    }
+    fetchLanyardRest();
     setTimeout(() => {
       if (syncText) syncText.textContent = "sync";
       if (syncIcon) syncIcon.style.animation = "";

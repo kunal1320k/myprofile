@@ -1,0 +1,11 @@
+name = "kunal-profile-services"
+main = "api/worker.js"
+compatibility_date = "2026-08-16"
+
+[[durable_objects.bindings]]
+name = "VISITOR_COUNTER"
+class_name = "VisitorCounter"
+
+[[migrations]]
+tag = "v1"
+new_classes = ["VisitorCounter"]
