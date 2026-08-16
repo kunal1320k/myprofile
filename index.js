@@ -31,9 +31,7 @@ const SPOTIFY_CONFIG = {
 };
 
 const VISITOR_COUNTER_CONFIG = {
-  // Set this to the Worker URL after deploying `api/worker.js`, for example:
-  // "https://kunal-profile-services.<account>.workers.dev/visitor"
-  endpoint: ""
+  endpoint: "https://kunal-profile-services.kunalrana1320k.workers.dev/visitor"
 };
 
 const rawRoot = document.getElementById('raw-root');
