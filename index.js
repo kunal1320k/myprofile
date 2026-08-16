@@ -802,8 +802,7 @@ function spotifyTrackUrl(state) {
 
 function liveElapsedSeconds() {
   if (!currentPlaybackState.isPlaying) return 0;
-  const elapsed = (currentPlaybackState.progressMs || 0) + (Date.now() - (currentPlaybackState.updatedAt || Date.now()));
-  return Math.max(0, Math.floor(elapsed / 1000));
+  return Math.max(0, Math.floor(getLiveProgress() / 1000));
 }
 
 function updateYouTubeLaunchUrl() {
@@ -820,8 +819,40 @@ let currentPlaybackState = {
   songUrl: SPOTIFY_CONFIG.playlist.url,
   progressMs: 0,
   durationMs: 0,
-  updatedAt: Date.now()
+  updatedAt: Date.now(),
+  timingSource: "none"
 };
+
+function playbackKey(state) {
+  const title = (state.title || "").trim().toLowerCase();
+  const artist = (state.artist || "").split(/[\u2022;,\-|]/)[0].trim().toLowerCase();
+  return `${title}::${artist}`;
+}
+
+function getLiveProgress(state = currentPlaybackState) {
+  const base = Math.max(0, Number(state.progressMs) || 0);
+  const elapsed = Math.max(0, Date.now() - (Number(state.updatedAt) || Date.now()));
+  const progress = base + elapsed;
+  return state.durationMs > 0 ? Math.min(progress, state.durationMs) : progress;
+}
+
+function preservePreciseTiming(nextState) {
+  const sameTrack = currentPlaybackState.isPlaying && playbackKey(currentPlaybackState) === playbackKey(nextState);
+  const hasPreciseClock = currentPlaybackState.timingSource === "lanyard" || currentPlaybackState.timingSource === "api";
+
+  // Last.fm establishes that a track is active, but does not expose its start
+  // timestamp. Keep Lanyard/API timing when both services refer to this song.
+  if (sameTrack && nextState.timingSource === "lastfm" && hasPreciseClock) {
+    return {
+      ...nextState,
+      progressMs: getLiveProgress(currentPlaybackState),
+      durationMs: currentPlaybackState.durationMs || nextState.durationMs,
+      updatedAt: Date.now(),
+      timingSource: currentPlaybackState.timingSource
+    };
+  }
+  return nextState;
+}
 
 function renderSpotifyUI(state) {
   const isLive = state.isPlaying;
@@ -839,10 +870,16 @@ function renderSpotifyUI(state) {
       if (!isPlaceholder) {
         trackArt.src = state.albumArt;
       } else {
+        const expectedTrack = playbackKey(state);
         fetchArtworkAndDuration(state.title, state.artist).then(meta => {
+          if (playbackKey(currentPlaybackState) !== expectedTrack) return;
           if (meta.artwork && trackArt) {
             trackArt.src = meta.artwork;
-            state.albumArt = meta.artwork;
+            currentPlaybackState.albumArt = meta.artwork;
+          }
+          if (meta.durationMs) {
+            currentPlaybackState.durationMs = meta.durationMs;
+            updateProgressBar();
           }
         });
       }
@@ -942,16 +979,22 @@ function renderSpotifyUI(state) {
 }
 
 function updateProgressBar() {
-  if (!currentPlaybackState.isPlaying || !currentPlaybackState.durationMs || currentPlaybackState.durationMs <= 0) {
+  if (!currentPlaybackState.isPlaying) {
     if (progressBarFill) progressBarFill.style.width = "0%";
     if (timeCurrent) timeCurrent.textContent = "0:00";
     if (timeTotal) timeTotal.textContent = "--:--";
     return;
   }
 
-  let progress = currentPlaybackState.progressMs;
-  const elapsed = Date.now() - currentPlaybackState.updatedAt;
-  progress = Math.min(progress + elapsed, currentPlaybackState.durationMs);
+  const progress = getLiveProgress();
+
+  if (!currentPlaybackState.durationMs || currentPlaybackState.durationMs <= 0) {
+    if (progressBarFill) progressBarFill.style.width = "0%";
+    if (timeCurrent) timeCurrent.textContent = formatMs(progress);
+    if (timeTotal) timeTotal.textContent = "--:--";
+    syncActiveLyric(progress);
+    return;
+  }
 
   const percent = Math.min(Math.max((progress / currentPlaybackState.durationMs) * 100, 0), 100);
   if (progressBarFill) progressBarFill.style.width = `${percent}%`;
@@ -996,11 +1039,7 @@ async function fetchSyncedLyrics(title, artist, durationMs) {
   
   // If we already have loaded lyrics for this track, re-sync immediately
   if (currentLyricsTrackKey === trackKey && currentLyrics.length > 0) {
-    let progress = currentPlaybackState.progressMs || 0;
-    if (currentPlaybackState.updatedAt) {
-      progress += (Date.now() - currentPlaybackState.updatedAt);
-    }
-    syncActiveLyric(progress);
+    syncActiveLyric(getLiveProgress());
     return;
   }
 
@@ -1098,11 +1137,7 @@ async function fetchSyncedLyrics(title, artist, durationMs) {
       renderLyricsLines(currentLyrics);
       if (lyricsStatusBadge) lyricsStatusBadge.textContent = "synced";
       
-      let progress = currentPlaybackState.progressMs || 0;
-      if (currentPlaybackState.updatedAt) {
-        progress += (Date.now() - currentPlaybackState.updatedAt);
-      }
-      syncActiveLyric(progress);
+      syncActiveLyric(getLiveProgress());
     } else if (data && data.plainLyrics) {
       currentLyrics = data.plainLyrics.split('\n').filter(t => t.trim()).map(t => ({ timeMs: 0, text: t.trim() }));
       renderLyricsLines(currentLyrics);
@@ -1280,7 +1315,8 @@ function handleLanyardData(data) {
       progressMs: progress,
       durationMs: duration,
       source: "spotify",
-      updatedAt: Date.now()
+      updatedAt: Date.now(),
+      timingSource: "lanyard"
     };
     renderSpotifyUI(currentPlaybackState);
   } else {
@@ -1326,15 +1362,23 @@ async function pollCustomEndpoint() {
     if (res.ok) {
       const data = await res.json();
       if (data && data.is_playing && data.title) {
+        const receivedAt = Date.now();
+        const serverTimestamp = Number(data.timestamp);
+        // Account for transport latency only when the server and browser clocks
+        // are plausibly aligned; otherwise the received time is the safe anchor.
+        const responseAge = serverTimestamp && Math.abs(receivedAt - serverTimestamp) < 15000
+          ? Math.max(0, receivedAt - serverTimestamp)
+          : 0;
         currentPlaybackState = {
           isPlaying: true,
           title: data.title,
           artist: `${data.artist || "Spotify Artist"} • ${data.album || ""}`,
           albumArt: data.album_art_url || SPOTIFY_CONFIG.playlist.albumArt,
           songUrl: data.song_url || SPOTIFY_CONFIG.playlist.url,
-          progressMs: data.progress_ms || 0,
+          progressMs: Math.max(0, Number(data.progress_ms) || 0) + responseAge,
           durationMs: data.duration_ms || 0,
-          updatedAt: Date.now()
+          updatedAt: receivedAt,
+          timingSource: "api"
         };
       } else {
         currentPlaybackState = {
@@ -1530,7 +1574,8 @@ async function fetchLastFmNowPlaying() {
         }
 
         const trackKey = `${title}_${artist}`.toLowerCase();
-        if (trackKey !== lastFmCurrentTrackKey) {
+        const isSameTrack = trackKey === lastFmCurrentTrackKey;
+        if (!isSameTrack) {
           lastFmCurrentTrackKey = trackKey;
           lastFmTrackStartTime = Date.now();
         }
@@ -1543,30 +1588,36 @@ async function fetchLastFmNowPlaying() {
           platform = "ytmusic";
         }
 
-        currentPlaybackState = {
+        const lastFmState = {
           isPlaying: true,
           title: title,
           artist: album ? `${artist} • ${album}` : artist,
           albumArt: albumArt || SPOTIFY_CONFIG.playlist.albumArt,
           songUrl: songUrl,
           progressMs: elapsedMs,
-          durationMs: currentPlaybackState.durationMs > 0 ? currentPlaybackState.durationMs : 210000,
+          // Never borrow a prior song's duration. Last.fm has no dependable
+          // now-playing duration, so metadata resolves this independently.
+          durationMs: isSameTrack ? currentPlaybackState.durationMs : 0,
           source: platform,
-          updatedAt: Date.now()
+          updatedAt: Date.now(),
+          timingSource: "lastfm"
         };
+        currentPlaybackState = preservePreciseTiming(lastFmState);
 
         renderSpotifyUI(currentPlaybackState);
 
         // Fetch duration & fallback artwork in background
-        if (!albumArt || !currentPlaybackState.durationMs || currentPlaybackState.durationMs === 210000) {
+        if (!albumArt || !currentPlaybackState.durationMs) {
+          const expectedTrack = playbackKey(currentPlaybackState);
           fetchArtworkAndDuration(title, artist).then(meta => {
+            if (playbackKey(currentPlaybackState) !== expectedTrack) return;
             if (meta.artwork && !albumArt && trackArt) {
               trackArt.src = meta.artwork;
               currentPlaybackState.albumArt = meta.artwork;
             }
             if (meta.durationMs) {
               currentPlaybackState.durationMs = meta.durationMs;
-              if (timeTotal) timeTotal.textContent = formatMs(meta.durationMs);
+              updateProgressBar();
             }
           });
         }
