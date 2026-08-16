@@ -183,7 +183,7 @@ export default {
 
     const corsHeaders = {
       "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "GET, OPTIONS",
+      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
       "Access-Control-Allow-Headers": "Content-Type",
       "Content-Type": "application/json",
       "Cache-Control": "public, max-age=5",
@@ -193,69 +193,83 @@ export default {
       return new Response(null, { headers: corsHeaders });
     }
 
-    try {
-      const { access_token } = await getAccessToken(env);
+    // If Spotify credentials are configured, serve Spotify endpoint
+    if (env.SPOTIFY_CLIENT_ID && env.SPOTIFY_CLIENT_SECRET && env.SPOTIFY_REFRESH_TOKEN) {
+      try {
+        const { access_token } = await getAccessToken(env);
+        if (!access_token) {
+          return new Response(
+            JSON.stringify({ is_playing: false, error: "Authentication failed" }),
+            { headers: corsHeaders, status: 500 }
+          );
+        }
 
-      if (!access_token) {
-        return new Response(
-          JSON.stringify({ is_playing: false, error: "Authentication failed" }),
-          { headers: corsHeaders, status: 500 }
-        );
-      }
-
-      const response = await fetch(NOW_PLAYING_ENDPOINT, {
-        headers: { Authorization: `Bearer ${access_token}` },
-      });
-
-      if (response.status === 204 || response.status > 400) {
-        const recentResponse = await fetch(RECENTLY_PLAYED_ENDPOINT, {
+        const response = await fetch(NOW_PLAYING_ENDPOINT, {
           headers: { Authorization: `Bearer ${access_token}` },
         });
 
-        if (recentResponse.ok) {
-          const recentData = await recentResponse.json();
-          const item = recentData.items?.[0]?.track;
-          if (item) {
-            return new Response(
-              JSON.stringify({
-                is_playing: false,
-                title: item.name,
-                artist: item.artists.map((a) => a.name).join(", "),
-                album: item.album.name,
-                album_art_url: item.album.images[0]?.url,
-                song_url: item.external_urls.spotify,
-              }),
-              { headers: corsHeaders }
-            );
+        if (response.status === 204 || response.status > 400) {
+          const recentResponse = await fetch(RECENTLY_PLAYED_ENDPOINT, {
+            headers: { Authorization: `Bearer ${access_token}` },
+          });
+
+          if (recentResponse.ok) {
+            const recentData = await recentResponse.json();
+            const item = recentData.items?.[0]?.track;
+            if (item) {
+              return new Response(
+                JSON.stringify({
+                  is_playing: false,
+                  title: item.name,
+                  artist: item.artists.map((a) => a.name).join(", "),
+                  album: item.album.name,
+                  album_art_url: item.album.images[0]?.url,
+                  song_url: item.external_urls.spotify,
+                }),
+                { headers: corsHeaders }
+              );
+            }
           }
+
+          return new Response(JSON.stringify({ is_playing: false }), { headers: corsHeaders });
         }
 
-        return new Response(JSON.stringify({ is_playing: false }), { headers: corsHeaders });
+        const song = await response.json();
+        if (!song.item) {
+          return new Response(JSON.stringify({ is_playing: false }), { headers: corsHeaders });
+        }
+
+        const data = {
+          is_playing: song.is_playing,
+          title: song.item.name,
+          artist: song.item.artists.map((a) => a.name).join(", "),
+          album: song.item.album.name,
+          album_art_url: song.item.album.images[0]?.url,
+          song_url: song.item.external_urls.spotify,
+          progress_ms: song.progress_ms,
+          duration_ms: song.item.duration_ms,
+          timestamp: Date.now(),
+        };
+
+        return new Response(JSON.stringify(data), { headers: corsHeaders });
+      } catch (err) {
+        return new Response(
+          JSON.stringify({ is_playing: false, error: err.message }),
+          { headers: corsHeaders, status: 500 }
+        );
       }
-
-      const song = await response.json();
-      if (!song.item) {
-        return new Response(JSON.stringify({ is_playing: false }), { headers: corsHeaders });
-      }
-
-      const data = {
-        is_playing: song.is_playing,
-        title: song.item.name,
-        artist: song.item.artists.map((a) => a.name).join(", "),
-        album: song.item.album.name,
-        album_art_url: song.item.album.images[0]?.url,
-        song_url: song.item.external_urls.spotify,
-        progress_ms: song.progress_ms,
-        duration_ms: song.item.duration_ms,
-        timestamp: Date.now(),
-      };
-
-      return new Response(JSON.stringify(data), { headers: corsHeaders });
-    } catch (err) {
-      return new Response(
-        JSON.stringify({ is_playing: false, error: err.message }),
-        { headers: corsHeaders, status: 500 }
-      );
     }
+
+    // Default root response
+    return new Response(
+      JSON.stringify({
+        status: "online",
+        service: "kunal-profile-services",
+        endpoints: {
+          visitor: "/visitor"
+        }
+      }),
+      { headers: corsHeaders }
+    );
   },
 };
