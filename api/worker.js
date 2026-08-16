@@ -126,7 +126,7 @@ export default {
         try {
           const body = await request.json();
           if (body && body.clientId) clientId = body.clientId;
-        } catch (e) {}
+        } catch (e) { }
 
         const salt = env.VISITOR_HASH_SALT || "kunal_autumn_profile_salt_2026";
         const ip = request.headers.get("CF-Connecting-IP") || "unknown";
