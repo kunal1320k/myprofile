@@ -1103,9 +1103,12 @@ function highlightLyricIndex(idx) {
   lines.forEach((l, i) => {
     if (i === idx) {
       l.className = 'lyric-line active';
-      // Smoothly scroll only the lyrics inner container, never the window or outer page!
-      const targetScrollTop = l.offsetTop - (lyricsScroll.clientHeight / 2) + (l.clientHeight / 2);
-      lyricsScroll.scrollTo({ top: targetScrollTop, behavior: 'smooth' });
+      // Calculate exact offset of the line inside lyricsScroll to keep it vertically centered
+      const scrollBoxRect = lyricsScroll.getBoundingClientRect();
+      const lineRect = l.getBoundingClientRect();
+      const relativeTop = lineRect.top - scrollBoxRect.top + lyricsScroll.scrollTop;
+      const targetScrollTop = relativeTop - (lyricsScroll.clientHeight / 2) + (lineRect.height / 2);
+      lyricsScroll.scrollTo({ top: Math.max(0, targetScrollTop), behavior: 'smooth' });
     } else if (i < idx) {
       l.className = 'lyric-line past';
     } else {

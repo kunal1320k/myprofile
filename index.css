@@ -897,24 +897,23 @@ body.aesthetic {
     }
 
     .lyrics-scroll {
-      max-height: 150px;
+      height: 160px;
+      max-height: 160px;
       overflow-y: auto;
       scroll-behavior: smooth;
       display: flex;
       flex-direction: column;
-      gap: 10px;
-      padding: 6px 4px 14px;
-      mask-image: linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 1) 15%, rgba(0, 0, 0, 1) 85%, transparent 100%);
-      -webkit-mask-image: linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 1) 15%, rgba(0, 0, 0, 1) 85%, transparent 100%);
+      gap: 12px;
+      padding: 70px 6px 70px;
+      position: relative;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+      mask-image: linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 1) 25%, rgba(0, 0, 0, 1) 75%, transparent 100%);
+      -webkit-mask-image: linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 1) 25%, rgba(0, 0, 0, 1) 75%, transparent 100%);
     }
 
     .lyrics-scroll::-webkit-scrollbar {
-      width: 3px;
-    }
-
-    .lyrics-scroll::-webkit-scrollbar-thumb {
-      background: rgba(226, 135, 67, 0.3);
-      border-radius: 2px;
+      display: none;
     }
 
     .lyric-line {
