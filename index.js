@@ -1240,6 +1240,7 @@ function connectLanyard() {
 
 function handleLanyardData(data) {
   if (data && data.listening_to_spotify && data.spotify) {
+    lanyardSocketActive = true;
     const s = data.spotify;
     const duration = s.timestamps ? (s.timestamps.end - s.timestamps.start) : 0;
     const progress = s.timestamps ? Math.max(0, Date.now() - s.timestamps.start) : 0;
@@ -1256,8 +1257,13 @@ function handleLanyardData(data) {
       updatedAt: Date.now()
     };
     renderSpotifyUI(currentPlaybackState);
-  } else if (!lastFmNowPlayingActive) {
-    // Only set offline if Last.fm is NOT actively reporting a track
+  } else {
+    lanyardSocketActive = false;
+    // If Last.fm is currently active or was active recently, do NOT override with offline
+    if (lastFmNowPlayingActive || (Date.now() - lastFmLastSeenPlaying < 25000)) {
+      return;
+    }
+
     currentPlaybackState = {
       isPlaying: false,
       title: SPOTIFY_CONFIG.playlist.title,
@@ -1421,6 +1427,7 @@ if (toggleEmbedBtn) {
 let lastFmTrackStartTime = 0;
 let lastFmCurrentTrackKey = "";
 let lastFmNowPlayingActive = false;
+let lastFmLastSeenPlaying = 0;
 let lanyardSocketActive = false;
 const artworkCache = new Map();
 
@@ -1478,6 +1485,9 @@ async function fetchLastFmNowPlaying() {
       const currentTrack = tracks[0];
 
       if (currentTrack && currentTrack['@attr'] && currentTrack['@attr'].nowplaying === "true") {
+        lastFmLastSeenPlaying = Date.now();
+        lastFmNowPlayingActive = true;
+
         const title = currentTrack.name || "Unknown Track";
         const artist = (currentTrack.artist && (currentTrack.artist['#text'] || currentTrack.artist.name)) || "Unknown Artist";
         const album = (currentTrack.album && (currentTrack.album['#text'] || currentTrack.album.name)) || "";
@@ -1485,7 +1495,6 @@ async function fetchLastFmNowPlaying() {
         let albumArt = "";
         if (currentTrack.image && Array.isArray(currentTrack.image)) {
           const img = currentTrack.image.find(i => i.size === "extralarge") || currentTrack.image.find(i => i.size === "large") || currentTrack.image[currentTrack.image.length - 1];
-          // Check if image is valid and not Last.fm generic star placeholder
           if (img && img['#text'] && !img['#text'].includes("2a96cbd8b46e442fc41c2b86b821562f")) {
             albumArt = img['#text'];
           }
@@ -1500,14 +1509,7 @@ async function fetchLastFmNowPlaying() {
         const songUrl = currentTrack.url || `https://open.spotify.com/search/${encodeURIComponent(title + ' ' + artist)}`;
         const elapsedMs = Math.max(0, Date.now() - lastFmTrackStartTime);
 
-        // If Last.fm had no image or a placeholder, fetch high-res artwork & duration from iTunes
-        if (!albumArt) {
-          const meta = await fetchArtworkAndDuration(title, artist);
-          if (meta.artwork) albumArt = meta.artwork;
-          if (meta.durationMs) currentPlaybackState.durationMs = meta.durationMs;
-        }
-
-        let platform = "music";
+        let platform = "spotify";
         if (currentTrack.url && (currentTrack.url.includes("youtube") || currentTrack.url.includes("youtu.be"))) {
           platform = "ytmusic";
         }
@@ -1516,7 +1518,7 @@ async function fetchLastFmNowPlaying() {
           isPlaying: true,
           title: title,
           artist: album ? `${artist} • ${album}` : artist,
-          albumArt: albumArt,
+          albumArt: albumArt || SPOTIFY_CONFIG.playlist.albumArt,
           songUrl: songUrl,
           progressMs: elapsedMs,
           durationMs: currentPlaybackState.durationMs > 0 ? currentPlaybackState.durationMs : 210000,
@@ -1524,8 +1526,21 @@ async function fetchLastFmNowPlaying() {
           updatedAt: Date.now()
         };
 
-        lastFmNowPlayingActive = true;
         renderSpotifyUI(currentPlaybackState);
+
+        // Fetch duration & fallback artwork in background
+        if (!albumArt || !currentPlaybackState.durationMs || currentPlaybackState.durationMs === 210000) {
+          fetchArtworkAndDuration(title, artist).then(meta => {
+            if (meta.artwork && !albumArt && trackArt) {
+              trackArt.src = meta.artwork;
+              currentPlaybackState.albumArt = meta.artwork;
+            }
+            if (meta.durationMs) {
+              currentPlaybackState.durationMs = meta.durationMs;
+              if (timeTotal) timeTotal.textContent = formatMs(meta.durationMs);
+            }
+          });
+        }
         return;
       }
     }
@@ -1533,7 +1548,7 @@ async function fetchLastFmNowPlaying() {
     lastFmNowPlayingActive = false;
 
     // If Last.fm is not playing and Lanyard socket is not reporting a live song
-    if (currentPlaybackState.isPlaying && !lanyardSocketActive) {
+    if (currentPlaybackState.isPlaying && !lanyardSocketActive && (Date.now() - lastFmLastSeenPlaying > 15000)) {
       currentPlaybackState = {
         isPlaying: false,
         title: SPOTIFY_CONFIG.playlist.title,
