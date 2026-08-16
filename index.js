@@ -946,6 +946,7 @@ function updateProgressBar() {
 let currentLyrics = [];
 let currentLyricsTrackKey = "";
 let currentActiveLyricIndex = -1;
+let currentLyricsRequestId = 0;
 
 function parseLRC(lrc) {
   if (!lrc) return [];
@@ -972,14 +973,18 @@ function parseLRC(lrc) {
 async function fetchSyncedLyrics(title, artist, durationMs) {
   if (!title) return;
   const trackKey = `${title}_${artist}`.toLowerCase();
+  
+  // If we already have loaded lyrics for this track, re-sync immediately
   if (currentLyricsTrackKey === trackKey && currentLyrics.length > 0) {
-    renderLyricsLines(currentLyrics);
-    if (lyricsStatusBadge) lyricsStatusBadge.textContent = "synced";
-    if (currentPlaybackState.progressMs) {
-      syncActiveLyric(currentPlaybackState.progressMs);
+    let progress = currentPlaybackState.progressMs || 0;
+    if (currentPlaybackState.updatedAt) {
+      progress += (Date.now() - currentPlaybackState.updatedAt);
     }
+    syncActiveLyric(progress);
     return;
   }
+
+  const requestId = ++currentLyricsRequestId;
   currentLyricsTrackKey = trackKey;
   currentLyrics = [];
   currentActiveLyricIndex = -1;
@@ -990,6 +995,8 @@ async function fetchSyncedLyrics(title, artist, durationMs) {
   if (lyricsStatusBadge) lyricsStatusBadge.textContent = "fetching";
 
   const cleanTitle = title
+    .replace(/\s*\(with.*?\)/gi, '')
+    .replace(/\s*\[with.*?\]/gi, '')
     .replace(/\s*\(feat\..*?\)/gi, '')
     .replace(/\s*\[feat\..*?\]/gi, '')
     .replace(/\s*\(from.*?\)/gi, '')
@@ -998,11 +1005,10 @@ async function fetchSyncedLyrics(title, artist, durationMs) {
     .replace(/\s*\(movie.*?\)/gi, '')
     .replace(/\s*-\s*.*version.*/gi, '')
     .replace(/\s*-\s*.*remaster.*/gi, '')
-    .replace(/\s*\(with.*?\)/gi, '')
     .replace(/\s*\(original.*?\)/gi, '')
     .trim();
   
-  // Extract primary artist (handles Red Hot Chili Peppers • Californication, Sachet-Parampara, etc.)
+  // Extract primary artist
   const cleanArtist = artist ? artist.split(/[\u2022;,\-\|]/)[0].trim() : "";
 
   try {
@@ -1018,7 +1024,7 @@ async function fetchSyncedLyrics(title, artist, durationMs) {
       } catch (e) {}
     }
 
-    // 2. Try search with title + artist
+    // 2. Try search with clean title + clean artist
     if (!data || (!data.syncedLyrics && !data.plainLyrics)) {
       try {
         const query = cleanArtist ? `${cleanTitle} ${cleanArtist}` : cleanTitle;
@@ -1032,7 +1038,21 @@ async function fetchSyncedLyrics(title, artist, durationMs) {
       } catch (e) {}
     }
 
-    // 3. Try search with title only (ideal for Bollywood / soundtracks)
+    // 3. Try search with full raw title + artist
+    if (!data || (!data.syncedLyrics && !data.plainLyrics)) {
+      try {
+        const query = `${title} ${artist}`;
+        const searchRes = await fetch(`https://lrclib.net/api/search?q=${encodeURIComponent(query)}`);
+        if (searchRes.ok) {
+          const list = await searchRes.json();
+          if (list && list.length > 0) {
+            data = list.find(item => item.syncedLyrics) || list[0];
+          }
+        }
+      } catch (e) {}
+    }
+
+    // 4. Try search with title only
     if (!data || (!data.syncedLyrics && !data.plainLyrics)) {
       try {
         const titleSearchRes = await fetch(`https://lrclib.net/api/search?q=${encodeURIComponent(cleanTitle)}`);
@@ -1045,6 +1065,9 @@ async function fetchSyncedLyrics(title, artist, durationMs) {
       } catch (e) {}
     }
 
+    // Guard against stale asynchronous responses when songs change
+    if (requestId !== currentLyricsRequestId) return;
+
     if (data && data.duration && (!currentPlaybackState.durationMs || currentPlaybackState.durationMs === 210000)) {
       currentPlaybackState.durationMs = data.duration * 1000;
       if (timeTotal) timeTotal.textContent = formatMs(currentPlaybackState.durationMs);
@@ -1054,10 +1077,12 @@ async function fetchSyncedLyrics(title, artist, durationMs) {
       currentLyrics = parseLRC(data.syncedLyrics);
       renderLyricsLines(currentLyrics);
       if (lyricsStatusBadge) lyricsStatusBadge.textContent = "synced";
-      // Trigger sync with current progress immediately
-      if (currentPlaybackState.progressMs) {
-        syncActiveLyric(currentPlaybackState.progressMs);
+      
+      let progress = currentPlaybackState.progressMs || 0;
+      if (currentPlaybackState.updatedAt) {
+        progress += (Date.now() - currentPlaybackState.updatedAt);
       }
+      syncActiveLyric(progress);
     } else if (data && data.plainLyrics) {
       currentLyrics = data.plainLyrics.split('\n').filter(t => t.trim()).map(t => ({ timeMs: 0, text: t.trim() }));
       renderLyricsLines(currentLyrics);
@@ -1069,6 +1094,7 @@ async function fetchSyncedLyrics(title, artist, durationMs) {
       if (lyricsStatusBadge) lyricsStatusBadge.textContent = "no lyrics";
     }
   } catch (err) {
+    if (requestId !== currentLyricsRequestId) return;
     if (lyricsScroll) {
       lyricsScroll.innerHTML = '<p class="lyric-line-placeholder">lyrics temporarily unavailable</p>';
     }
@@ -1134,8 +1160,15 @@ function syncActiveLyric(progressMs) {
     }
   }
 
-  if (activeIdx !== currentActiveLyricIndex && activeIdx !== -1) {
-    highlightLyricIndex(activeIdx);
+  if (activeIdx !== currentActiveLyricIndex) {
+    if (activeIdx === -1) {
+      currentActiveLyricIndex = -1;
+      const lines = lyricsScroll.querySelectorAll('.lyric-line');
+      lines.forEach(l => l.className = 'lyric-line');
+      lyricsScroll.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      highlightLyricIndex(activeIdx);
+    }
   }
 }
 
