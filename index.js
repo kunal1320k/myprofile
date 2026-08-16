@@ -1408,6 +1408,17 @@ function startStreamPlayback() {
     }
   }
 
+  // Calculate live song progress offset
+  let progress = currentPlaybackState.progressMs;
+  if (currentPlaybackState.isPlaying && currentPlaybackState.updatedAt) {
+    progress += (Date.now() - currentPlaybackState.updatedAt);
+  }
+  const currentSecs = Math.max(0, progress / 1000);
+
+  if (liveStreamAudio.duration && liveStreamAudio.duration > 0 && liveStreamAudio.paused) {
+    liveStreamAudio.currentTime = Math.min(liveStreamAudio.duration - 1, currentSecs % liveStreamAudio.duration);
+  }
+
   liveStreamAudio.play().then(() => {
     if (streamPlayBtn) streamPlayBtn.classList.add('playing');
     if (streamPlayText) streamPlayText.textContent = "pause audio";
@@ -1437,6 +1448,17 @@ if (streamPlayBtn) {
 }
 
 if (liveStreamAudio) {
+  liveStreamAudio.addEventListener('loadedmetadata', () => {
+    let progress = currentPlaybackState.progressMs;
+    if (currentPlaybackState.isPlaying && currentPlaybackState.updatedAt) {
+      progress += (Date.now() - currentPlaybackState.updatedAt);
+    }
+    const currentSecs = Math.max(0, progress / 1000);
+    if (liveStreamAudio.duration && liveStreamAudio.duration > 0 && liveStreamAudio.paused) {
+      liveStreamAudio.currentTime = Math.min(liveStreamAudio.duration - 1, currentSecs % liveStreamAudio.duration);
+    }
+  });
+
   liveStreamAudio.addEventListener('timeupdate', () => {
     if (streamTimeText && liveStreamAudio.duration) {
       const cur = formatTime(liveStreamAudio.currentTime * 1000);
