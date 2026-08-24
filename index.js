@@ -30,9 +30,6 @@ const SPOTIFY_CONFIG = {
   }
 };
 
-const VISITOR_COUNTER_CONFIG = {
-  endpoint: "https://kunal-profile-services.kunalrana1320k.workers.dev/visitor"
-};
 
 const rawRoot = document.getElementById('raw-root');
 const aestheticRoot = document.getElementById('aesthetic-root');
@@ -73,9 +70,7 @@ const lyricsView = document.getElementById('lyrics-view');
 const embedView = document.getElementById('embed-view');
 const lyricsScroll = document.getElementById('lyrics-scroll');
 const lyricsStatusBadge = document.getElementById('lyrics-status-badge');
-const rawViewsCount = document.getElementById('raw-views-count');
 const rawSpotifyText = document.getElementById('raw-spotify-text');
-const visitorCount = document.getElementById('visitor-count');
 
 let revealed = false;
 let isMuted = false;
@@ -1188,68 +1183,6 @@ async function fetchLanyardRest() {
   }
 }
 
-// ── UNIQUE VISITOR COUNTER ──────────────────────────────────────────────────
-async function initVisitorCounter() {
-  if (!VISITOR_COUNTER_CONFIG.endpoint) {
-    fallbackCount();
-    return;
-  }
-
-  try {
-    const res = await fetch(VISITOR_COUNTER_CONFIG.endpoint, {
-      method: "POST",
-      cache: "no-store",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ clientId: getVisitorId() })
-    });
-    if (res.ok) {
-      const data = await res.json();
-      const count = Number(data.count ?? data.value) || 0;
-      localStorage.setItem("kunal1320k_last_known_count", String(count));
-      animateCount(count);
-    } else {
-      fallbackCount();
-    }
-  } catch (e) {
-    fallbackCount();
-  }
-}
-
-function getVisitorId() {
-  const storageKey = "kunal1320k_visitor_id_v1";
-  let clientId = localStorage.getItem(storageKey);
-  if (clientId) return clientId;
-
-  clientId = typeof crypto.randomUUID === "function"
-    ? crypto.randomUUID()
-    : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
-  localStorage.setItem(storageKey, clientId);
-  return clientId;
-}
-
-function animateCount(target) {
-  const formatted = Number(target).toLocaleString();
-  if (rawViewsCount) rawViewsCount.textContent = `✦ ${formatted} unique wanderers`;
-  if (!visitorCount) return;
-
-  let current = 0;
-  const step = Math.max(1, Math.floor(target / 25));
-  const timer = setInterval(() => {
-    current += step;
-    if (current >= target) {
-      current = target;
-      clearInterval(timer);
-    }
-    visitorCount.textContent = `✦ ${current.toLocaleString()} unique wanderers`;
-  }, 25);
-}
-
-function fallbackCount() {
-  const saved = localStorage.getItem("kunal1320k_last_known_count") || "17";
-  const formatted = Number(saved).toLocaleString();
-  if (rawViewsCount) rawViewsCount.textContent = `✦ ${formatted} unique wanderers`;
-  if (visitorCount) visitorCount.textContent = `✦ ${formatted} unique wanderers`;
-}
 
 // ── SWITCHABLE MEDIA ACCORDION PANEL (Lyrics / Playlist Embed) ────
 let currentActiveMediaView = ""; // "lyrics" | "playlist" | ""
@@ -1477,7 +1410,6 @@ muteBtn.addEventListener('click', () => {
 });
 
 // Initialize on page load
-initVisitorCounter();
 fetchLastFmNowPlaying();
 setInterval(fetchLastFmNowPlaying, SPOTIFY_CONFIG.lastfm.pollIntervalMs);
 connectLanyard();

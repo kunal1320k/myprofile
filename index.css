@@ -342,23 +342,7 @@ body.aesthetic {
       color: #f5efe6;
     }
 
-    .tagline {
-      font-family: "JetBrains Mono", monospace;
-      font-size: 13px;
-      text-transform: uppercase;
-      letter-spacing: .14em;
-      opacity: .6;
-      margin-bottom: 32px;
-    }
 
-    .about {
-      font-family: "JetBrains Mono", monospace;
-      font-size: 16px;
-      line-height: 1.8;
-      max-width: 520px;
-      color: #e8e2d9;
-      opacity: .92;
-    }
 
     .section-h2 {
       font-family: "Instrument Serif", serif;
@@ -428,56 +412,6 @@ body.aesthetic {
       transform: translate(1px, -1px)
     }
 
-    /* HERO TOP ROW & VISITOR BADGE */
-    .hero-top-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      flex-wrap: wrap;
-      margin-bottom: 8px;
-    }
-
-    .hero-top-row h1 {
-      margin: 0 !important;
-    }
-
-    .visitor-pill {
-      font-family: "JetBrains Mono", monospace;
-      font-size: 11px;
-      color: #dfb282;
-      background: rgba(226, 135, 67, 0.08);
-      border: 1px solid rgba(226, 135, 67, 0.25);
-      padding: 5px 12px;
-      border-radius: 999px;
-      display: inline-flex;
-      align-items: center;
-      gap: 7px;
-      letter-spacing: 0.03em;
-      box-shadow: 0 0 16px rgba(226, 135, 67, 0.08);
-      transition: all 0.3s ease;
-      user-select: none;
-    }
-
-    .visitor-pill:hover {
-      background: rgba(226, 135, 67, 0.14);
-      border-color: rgba(226, 135, 67, 0.4);
-      transform: translateY(-1px);
-    }
-
-    .visitor-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: #e28743;
-      box-shadow: 0 0 8px #e28743;
-      animation: visitorPulse 2.4s infinite ease-in-out;
-    }
-
-    @keyframes visitorPulse {
-      0%, 100% { transform: scale(1); opacity: 0.8; }
-      50% { transform: scale(1.35); opacity: 1; box-shadow: 0 0 12px #e28743; }
-    }
 
     /* SECTION HEADER & LIVE STATUS */
     .section-header-wrap {
@@ -1150,16 +1084,7 @@ body.aesthetic {
         font-size: clamp(42px, 13vw, 56px)
       }
 
-      .tagline {
-        font-size: 11px;
-        margin-bottom: 20px
-      }
 
-      .about {
-        font-size: 14px;
-        line-height: 1.7;
-        max-width: 100%
-      }
 
       .section-h2 {
         font-size: 24px;
