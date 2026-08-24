@@ -1,6 +1,5 @@
 const LINKS = [
   { name: "github", handle: "/ kunal1320k", url: "https://github.com/kunal1320k" },
-  { name: "instagram", handle: "/ kunal1320k", url: "https://www.instagram.com/kunal1320k/" },
   { name: "reddit", handle: "/ Juicy-Jam-987", url: "https://www.reddit.com/user/Juicy-Jam-987/" },
   { name: "myanimelist", handle: "/ kunal1320k", url: "https://myanimelist.net/profile/kunal1320k" },
   { name: "telegram", handle: "/ kunal1320k", url: "https://t.me/kunal1320k" },
