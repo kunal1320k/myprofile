@@ -1,21 +1,24 @@
-﻿{
-  "_note": "EDIT ME: fallback for YouTube branch tree. For auto-update, set YT_API_KEY + YT_CHANNEL_ID in worker env and the site polls /api/branch?type=youtube. New playlists on your channel then become new branches automatically.",
+{
+  "channel_handle": "@kunal1320k",
+  "channel_url": "https://www.youtube.com/@kunal1320k",
   "playlists": [
     {
-      "id": "uploads",
-      "title": "uploads",
+      "id": "yt-channel",
+      "title": "YouTube Channel",
       "subtitle": "@kunal1320k",
       "url": "https://www.youtube.com/@kunal1320k",
       "songs": [
-        { "id": "v1", "title": "latest video appears here", "subtitle": "auto via API or edit me", "url": "https://www.youtube.com/@kunal1320k" }
+        { "title": "Visit YouTube Channel", "artist": "@kunal1320k", "url": "https://www.youtube.com/@kunal1320k" }
       ]
     },
     {
-      "id": "favorites",
-      "title": "favorites",
-      "subtitle": "playlist",
+      "id": "yt-playlists",
+      "title": "Playlists & Liked Videos",
+      "subtitle": "kunal1320k playlists",
       "url": "https://www.youtube.com/@kunal1320k/playlists",
-      "songs": []
+      "songs": [
+        { "title": "View All Playlists", "artist": "YouTube", "url": "https://www.youtube.com/@kunal1320k/playlists" }
+      ]
     }
   ]
 }

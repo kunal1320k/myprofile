@@ -1558,65 +1558,182 @@ const mobileBranchTitle = document.getElementById('mobile-branch-title');
 const mobileBranchBadge = document.getElementById('mobile-branch-badge');
 const mobileBranchContent = document.getElementById('mobile-branch-content');
 
-// ── RICH BRANCH DATASET WITH MULTI-LEVEL SUB-BRANCHES ───────────────────────
+// ── RICH BRANCH DATASET WITH KUNAL1320K REAL DATA ─────────────────────────
 const BRANCH_DATA = {
   spotify: {
     title: "Spotify Playlists",
     badge: "Music",
     icon: `<svg viewBox="0 0 24 24" width="16" height="16" fill="#1ed760"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/></svg>`,
     profileUrl: "https://open.spotify.com/user/kunal1320k",
-    nodes: [
+nodes: [
       {
-        id: "sp-angrexxxxi",
+        id: "sp-14d7SJJHjhwEerGgKaUa4J",
         title: "angrexxxxi 🥟",
-        subtitle: "kunal1320k • 48 songs",
-        tag: "Current Playlist",
+        subtitle: "kunal1320k • 100 songs",
+        tag: "Playlist",
         url: "https://open.spotify.com/playlist/14d7SJJHjhwEerGgKaUa4J",
         subBranches: [
-          { title: "The Scientist", artist: "Coldplay", duration: "5:09", url: "https://open.spotify.com/track/75JFxkI2RXiU7L9VXzM79k" },
-          { title: "Hey There Delilah", artist: "Plain White T's", duration: "3:52", url: "https://open.spotify.com/track/4RCWB3V8V0Digzq999mep3" },
-          { title: "Yellow", artist: "Coldplay", duration: "4:26", url: "https://open.spotify.com/track/3AJwUDP919kvQ9QcozQPxg" },
-          { title: "Sparks", artist: "Coldplay", duration: "3:47", url: "https://open.spotify.com/track/7D0RhFcb3CrfPuTJ0obrod" },
-          { title: "Somewhere Only We Know", artist: "Keane", duration: "3:57", url: "https://open.spotify.com/track/0ll8uFnc0nKi3sszZgTVn4" },
-          { title: "Fix You", artist: "Coldplay", duration: "4:55", url: "https://open.spotify.com/track/7LVHVU3tWfcxj5aiP2VWZs" }
+          { title: "Every Breath You Take", artist: "The Police", duration: "4:13", url: "https://open.spotify.com/track/1JSTJqkT5qHq8MDJnJbRE1" },
+          { title: "Cry", artist: "Cigarettes After Sex", duration: "4:16", url: "https://open.spotify.com/track/7mDTvYD2ieE4Q28XFziMfJ" },
+          { title: "Fluorescent Adolescent", artist: "Arctic Monkeys", duration: "3:03", url: "https://open.spotify.com/track/2x8evxqUlF0eRabbW2JBJd" },
+          { title: "Ride It", artist: "Jay Sean", duration: "3:10", url: "https://open.spotify.com/track/2YSrlOiR9kyiqUURfYwDXI" },
+          { title: "This Side of Paradise", artist: "Coyote Theory", duration: "4:02", url: "https://open.spotify.com/track/79EkGysjP2dL5GdpeQjRxT" },
+          { title: "Pluto Projector", artist: "Rex Orange County", duration: "4:27", url: "https://open.spotify.com/track/4EWBhKf1fOFnyMtUzACXEc" },
+          { title: "Fly Me to the Moon", artist: "The Macarons Project", duration: "2:35", url: "https://open.spotify.com/track/0flo3KqhjkcuoB1G6Mhq7s" },
+          { title: "Glue Song", artist: "beabadoobee", duration: "2:15", url: "https://open.spotify.com/track/3iBgrkexCzVuPy4O9vx7Mf" }
         ]
       },
       {
-        id: "sp-midnight",
-        title: "midnight vibes 🌙",
-        subtitle: "kunal1320k • 62 songs",
-        tag: "Nighttime",
-        url: "https://open.spotify.com/user/kunal1320k",
+        id: "sp-5xoSwzGB8S1xMJXhb6PABc",
+        title: "casette",
+        subtitle: "ishita • 87 songs",
+        tag: "Playlist",
+        url: "https://open.spotify.com/playlist/5xoSwzGB8S1xMJXhb6PABc",
         subBranches: [
-          { title: "After Hours", artist: "The Weeknd", duration: "6:01", url: "https://open.spotify.com" },
-          { title: "Slow Dancing in the Dark", artist: "Joji", duration: "3:29", url: "https://open.spotify.com" },
-          { title: "Glimpse of Us", artist: "Joji", duration: "3:53", url: "https://open.spotify.com" },
-          { title: "Sweater Weather", artist: "The Neighbourhood", duration: "4:00", url: "https://open.spotify.com" }
+          { title: "My Own Summer (Shove It)", artist: "Deftones", duration: "3:34", url: "https://open.spotify.com/track/1158ckiB5S4cpsdYHDB9IF" },
+          { title: "Change (In the House of Flies)", artist: "Deftones", duration: "4:59", url: "https://open.spotify.com/track/51c94ac31swyDQj9B3Lzs3" },
+          { title: "Better", artist: "sign crushes motorist", duration: "1:38", url: "https://open.spotify.com/track/0Z94dtWElamDwU4NrcGoUR" },
+          { title: "Good Looking", artist: "Suki Waterhouse", duration: "3:34", url: "https://open.spotify.com/track/0j3mqDTK4Z6lvrLzFCUUz6" },
+          { title: "Passenger", artist: "Deftones", duration: "6:08", url: "https://open.spotify.com/track/7IoK6jZBxY7NMoQPoPXZCF" },
+          { title: "Entombed", artist: "Deftones", duration: "4:59", url: "https://open.spotify.com/track/4bLCPfBLKlqiONo6TALTh5" },
+          { title: "Rosemary", artist: "Deftones", duration: "6:53", url: "https://open.spotify.com/track/4FEr6dIdH6EqLKR0jB560J" },
+          { title: "Kingston", artist: "Faye Webster", duration: "3:22", url: "https://open.spotify.com/track/5WbfFTuIldjL9x7W6y5l7R" }
         ]
       },
       {
-        id: "sp-indie",
-        title: "hindi / indie acoustic 🎸",
-        subtitle: "kunal1320k • 35 songs",
-        tag: "Acoustic",
-        url: "https://open.spotify.com/user/kunal1320k",
+        id: "sp-6zEcBH3X2RkTtSQI4fTn8v",
+        title: "Coffeeee",
+        subtitle: "sangam_shh • 100 songs",
+        tag: "Playlist",
+        url: "https://open.spotify.com/playlist/6zEcBH3X2RkTtSQI4fTn8v",
         subBranches: [
-          { title: "Choo Lo", artist: "The Local Train", duration: "3:54", url: "https://open.spotify.com" },
-          { title: "Baarishein", artist: "Anuv Jain", duration: "3:27", url: "https://open.spotify.com" },
-          { title: "Kasoor", artist: "Prateek Kuhad", duration: "3:16", url: "https://open.spotify.com" },
-          { title: "Alag Aasmaan", artist: "Anuv Jain", duration: "3:32", url: "https://open.spotify.com" }
+          { title: "Girl in a Coffee Shop", artist: "Zach Seabaugh", duration: "2:15", url: "https://open.spotify.com/track/4t1zWwxBWH2xqpQgR6KTcq" },
+          { title: "Make You Mine", artist: "PUBLIC", duration: "3:52", url: "https://open.spotify.com/track/5iFwAOB2TFkPJk8sMlxP8g" },
+          { title: "Belong Together", artist: "Mark Ambor", duration: "2:28", url: "https://open.spotify.com/track/5uQ7de4EWjb3rkcFxyEOpu" },
+          { title: "Carry You Home", artist: "Alex Warren", duration: "2:46", url: "https://open.spotify.com/track/4uzKAj0mIyYmyhsRRyPXaQ" },
+          { title: "Those Eyes", artist: "New West", duration: "3:40", url: "https://open.spotify.com/track/50x1Ic8CaXkYNvjmxe3WXy" },
+          { title: "Let's Fall in Love for the Night", artist: "FINNEAS", duration: "3:10", url: "https://open.spotify.com/track/4pfhgOylRLcBll5JjUsJZj" },
+          { title: "The One", artist: "Kodaline", duration: "3:52", url: "https://open.spotify.com/track/0My8NPmENHrN5W7OfgZnZJ" },
+          { title: "Perfect", artist: "Ed Sheeran", duration: "4:23", url: "https://open.spotify.com/track/0tgVpDi06FyKpA1z0VMD4v" }
         ]
       },
       {
-        id: "sp-lofi",
-        title: "lofi beats & study ☕",
-        subtitle: "kunal1320k • 80 songs",
-        tag: "Focus",
-        url: "https://open.spotify.com/user/kunal1320k",
+        id: "sp-4ihgqKZzcjEJ6s7RY9bSWU",
+        title: "the boy",
+        subtitle: "ishita • 51 songs",
+        tag: "Playlist",
+        url: "https://open.spotify.com/playlist/4ihgqKZzcjEJ6s7RY9bSWU",
         subBranches: [
-          { title: "Affection", artist: "Jinsang", duration: "1:44", url: "https://open.spotify.com" },
-          { title: "Again", artist: "Wun Two", duration: "1:58", url: "https://open.spotify.com" },
-          { title: "Snowman", artist: "WYS", duration: "3:02", url: "https://open.spotify.com" }
+          { title: "Mirrors", artist: "Justin Timberlake", duration: "8:05", url: "https://open.spotify.com/track/4rHZZAmHpZrA3iH5zx8frV" },
+          { title: "Comfortable", artist: "H.E.R.", duration: "4:15", url: "https://open.spotify.com/track/3f3cliOygeuUpGRwdohy12" },
+          { title: "melt", artist: "Kehlani", duration: "3:31", url: "https://open.spotify.com/track/1pCbBNRglGwlMLeUTOnqrO" },
+          { title: "All of Me", artist: "John Legend", duration: "4:29", url: "https://open.spotify.com/track/3U4isOIWM3VvDubwSI3y7a" },
+          { title: "yours", artist: "Greyson Chance", duration: "3:46", url: "https://open.spotify.com/track/1FHy0U8vbNRJY6t9sk4rC2" },
+          { title: "Tum Se Hi", artist: "Pritam, Mohit Chauhan, Irshad Kamil", duration: "5:21", url: "https://open.spotify.com/track/7eQl3Yqv35ioqUfveKHitE" },
+          { title: "Liz On Top Of The World - From \"Pride & Prejudice\" Soundtrack", artist: "Dario Marianelli, Jean-Yves Thibaudet", duration: "1:22", url: "https://open.spotify.com/track/1nd0AX0VYGQb2pF442YqGj" },
+          { title: "Je te laisserai des mots", artist: "Patrick Watson", duration: "2:40", url: "https://open.spotify.com/track/0V5cvmTKsYmF5FmGGEAfmS" }
+        ]
+      },
+      {
+        id: "sp-4WshYPCsLOlWNioo28hFsr",
+        title: "in your head",
+        subtitle: "ishita • 42 songs",
+        tag: "Playlist",
+        url: "https://open.spotify.com/playlist/4WshYPCsLOlWNioo28hFsr",
+        subBranches: [
+          { title: "in your head", artist: "cloudyfield", duration: "2:50", url: "https://open.spotify.com/track/4o6xvp0vmdHMeS4Z5qeRQw" },
+          { title: "My Girlfriend's Girlfriend", artist: "Type O Negative", duration: "3:48", url: "https://open.spotify.com/track/3yubyWatnRRLHkIsN1ZI2Q" },
+          { title: "Bardo", artist: "trauma ray", duration: "3:24", url: "https://open.spotify.com/track/05eBPrTZPj0i0p9xsIlNPI" },
+          { title: "Pandora", artist: "Wisp", duration: "4:21", url: "https://open.spotify.com/track/3SBhQh5X7tO8ejCMUdjSRu" },
+          { title: "Your face", artist: "Wisp", duration: "3:47", url: "https://open.spotify.com/track/7ne2hzW4jaU5tacaCI4kJH" },
+          { title: "Anesthesia", artist: "Type O Negative", duration: "6:41", url: "https://open.spotify.com/track/0c03LEUpwW0O2tmt0dfktG" },
+          { title: "Be My Druidess", artist: "Type O Negative", duration: "5:25", url: "https://open.spotify.com/track/1ycz5DvATLtmn2pOU8u38C" },
+          { title: "Garden", artist: "Pearl Jam", duration: "4:58", url: "https://open.spotify.com/track/3KcJEOyaLDLAERlOCBhmPA" }
+        ]
+      },
+      {
+        id: "sp-478BJCqpYQbRiykf7Eiyy3",
+        title: "Himachal 💗",
+        subtitle: "sangam_shh • 39 songs",
+        tag: "Playlist",
+        url: "https://open.spotify.com/playlist/478BJCqpYQbRiykf7Eiyy3",
+        subBranches: [
+          { title: "Amma Puchhdi Sun Dhiye Meriye", artist: "Karnail Rana", duration: "9:04", url: "https://open.spotify.com/track/1nyKQwj2C1wIsQlssBwUng" },
+          { title: "Chaska", artist: "Ajay Chauhan, Ajju Tomar", duration: "9:43", url: "https://open.spotify.com/track/2woe0OybftJUafAzk88p8b" },
+          { title: "Rumatiye", artist: "Nati King Kuldeep Sharma", duration: "2:54", url: "https://open.spotify.com/track/1r7tlzmNtSp5YuvXzUM9Uk" },
+          { title: "Dunge Naluye", artist: "Vicky Rajta", duration: "4:22", url: "https://open.spotify.com/track/0BlvgAcS6k9EoBeKhJorNX" },
+          { title: "Rohru Jana DJ Nonstop Album", artist: "Nati King Kuldeep Sharma", duration: "21:33", url: "https://open.spotify.com/track/2sp2HiujUohPImG787Nu9e" },
+          { title: "Nati Sirmour Waliye", artist: "Ajay Chauhan", duration: "4:53", url: "https://open.spotify.com/track/4rbv9ZnArAo9CHiw1igyDK" },
+          { title: "Kunjoo Chanchalo", artist: "Karnail Rana, Anuradha Paudwal", duration: "9:15", url: "https://open.spotify.com/track/0VsDpce4sz4YeoTq6ISD0J" },
+          { title: "Bangdiyan", artist: "Sunil Mastie, Sheetal Arora", duration: "4:21", url: "https://open.spotify.com/track/2CwQKr68yEwCCqPA1lrC8d" }
+        ]
+      },
+      {
+        id: "sp-0dTWmjqu1I9Wy8amnyCUPJ",
+        title: "distortion",
+        subtitle: "ishita • 37 songs",
+        tag: "Playlist",
+        url: "https://open.spotify.com/playlist/0dTWmjqu1I9Wy8amnyCUPJ",
+        subBranches: [
+          { title: "Rummage (feat. Orbiting Human Circus)", artist: "quannnic, Orbiting Human Circus", duration: "3:50", url: "https://open.spotify.com/track/5VTggg4KikE3rBmKHD3i7t" },
+          { title: "Enough for you", artist: "Wisp", duration: "3:05", url: "https://open.spotify.com/track/7CYPzawmBUJUN3tDGhQh1I" },
+          { title: "Figure It Out", artist: "Royal Blood", duration: "3:03", url: "https://open.spotify.com/track/3MjrueDQKVr6xDDseZwhEd" },
+          { title: "Chasing Light", artist: "aswekeepsearching", duration: "5:31", url: "https://open.spotify.com/track/5F0hIO08012qttN94QlO7k" },
+          { title: "Toofaan", artist: "Karakoram", duration: "3:52", url: "https://open.spotify.com/track/2Xf7blEC0JC3DYeIvy011j" },
+          { title: "life imitates life", artist: "quannnic", duration: "3:23", url: "https://open.spotify.com/track/5E9qBEUja2yAjUPhQO8Gx7" },
+          { title: "Safe In Your Skin", artist: "Title Fight", duration: "2:34", url: "https://open.spotify.com/track/1acjIzGS1YUrx6nSuktnqU" },
+          { title: "Downer", artist: "Nirvana", duration: "1:43", url: "https://open.spotify.com/track/4e0MJaiXSwXBhrQZHyoK8c" }
+        ]
+      },
+      {
+        id: "sp-6SJEodCZUtpAFFrRGtXz2M",
+        title: "right in the feels",
+        subtitle: "ishita • 26 songs",
+        tag: "Playlist",
+        url: "https://open.spotify.com/playlist/6SJEodCZUtpAFFrRGtXz2M",
+        subBranches: [
+          { title: "Liar", artist: "Paramore", duration: "4:21", url: "https://open.spotify.com/track/7EUhSxz4srS8pqh1cENbLB" },
+          { title: "Sextape", artist: "Deftones", duration: "4:01", url: "https://open.spotify.com/track/1EryAkZ0VHstC6haIxVBiE" },
+          { title: "Show Me How", artist: "Men I Trust", duration: "3:35", url: "https://open.spotify.com/track/01TyFEZu6mHbffsVfxgrFn" },
+          { title: "Scenery", artist: "Ashmute", duration: "4:34", url: "https://open.spotify.com/track/1PztXsxTLZE7rFNP0kUwgQ" },
+          { title: "Aaftaab", artist: "The Local Train", duration: "3:53", url: "https://open.spotify.com/track/4LtSTc3xANVhYeeN69nscM" },
+          { title: "Clair de lune", artist: "Claude Debussy, Alexis Weissenberg", duration: "5:47", url: "https://open.spotify.com/track/6kf7ZCJjEbjZXikivKOsvJ" },
+          { title: "Gymnopédie No. 1", artist: "Erik Satie, Philippe Entremont", duration: "3:25", url: "https://open.spotify.com/track/5NGtFXVpXSvwunEIGeviY3" },
+          { title: "Astronomy", artist: "Conan Gray", duration: "4:03", url: "https://open.spotify.com/track/0KmgJyW4GDgonqsoyx0CZ3" }
+        ]
+      },
+      {
+        id: "sp-1gHCUJSMJrMT4pClvoFcoV",
+        title: "Unheard ",
+        subtitle: "kunal1320k • 10 songs",
+        tag: "Playlist",
+        url: "https://open.spotify.com/playlist/1gHCUJSMJrMT4pClvoFcoV",
+        subBranches: [
+          { title: "Don't You Want Me", artist: "The Human League", duration: "3:56", url: "https://open.spotify.com/track/3L7RtEcu1Hw3OXrpnthngx" },
+          { title: "I Wanna Dance with Somebody (Who Loves Me)", artist: "Whitney Houston", duration: "4:52", url: "https://open.spotify.com/track/2tUBqZG2AbRi7Q0BIrVrEj" },
+          { title: "Scar Tissue", artist: "Red Hot Chili Peppers", duration: "3:35", url: "https://open.spotify.com/track/1G391cbiT3v3Cywg8T7DM1" },
+          { title: "Come Back to Me", artist: "David Cook", duration: "4:08", url: "https://open.spotify.com/track/55r33uTqnLglVMHb1qeWOd" },
+          { title: "Always Be My Baby", artist: "Mariah Carey", duration: "4:18", url: "https://open.spotify.com/track/2aBxt229cbLDOvtL7Xbb9x" },
+          { title: "Dekho Na", artist: "Sobit Tamang", duration: "3:47", url: "https://open.spotify.com/track/1tBFMrlbCnJIglzG9xroRp" },
+          { title: "Magnolia", artist: "Magnolia Celebration", duration: "4:16", url: "https://open.spotify.com/track/3JkDuxcnIzBUngCk6peKZi" },
+          { title: "Like You (feat. Ciara)", artist: "Bow Wow, Ciara", duration: "3:25", url: "https://open.spotify.com/track/3jEqrIfwKO0M8ALu3TGilF" }
+        ]
+      },
+      {
+        id: "sp-5rH0myoXIqZvoVLXJeliCL",
+        title: "for headbanging",
+        subtitle: "ishita • 41 songs",
+        tag: "Playlist",
+        url: "https://open.spotify.com/playlist/5rH0myoXIqZvoVLXJeliCL",
+        subBranches: [
+          { title: "KOOL KIDS", artist: "Måneskin", duration: "2:43", url: "https://open.spotify.com/track/2psPo5syHobyRjH1shxFsf" },
+          { title: "IN NOME DEL PADRE", artist: "Måneskin", duration: "3:39", url: "https://open.spotify.com/track/2uKWInHih8UkVBwgH6zuUm" },
+          { title: "LIVIDI SUI GOMITI", artist: "Måneskin", duration: "2:45", url: "https://open.spotify.com/track/1ITV1k9laGrWUpagayejMQ" },
+          { title: "LA FINE", artist: "Måneskin", duration: "3:20", url: "https://open.spotify.com/track/6DPE8tGV9lzKALNnvuY9dS" },
+          { title: "Figure It Out", artist: "Royal Blood", duration: "3:03", url: "https://open.spotify.com/track/3MjrueDQKVr6xDDseZwhEd" },
+          { title: "ZITTI E BUONI", artist: "Måneskin", duration: "3:14", url: "https://open.spotify.com/track/776AftMmFFAWUIEAb3lHhw" },
+          { title: "Mystify", artist: "INXS", duration: "3:16", url: "https://open.spotify.com/track/7LV9R3L1YfTSoefglhUyPD" },
+          { title: "Break Stuff", artist: "Limp Bizkit", duration: "2:46", url: "https://open.spotify.com/track/5cZqsjVs6MevCnAkasbEOX" }
         ]
       }
     ]
@@ -1628,96 +1745,114 @@ const BRANCH_DATA = {
     profileUrl: "https://github.com/kunal1320k",
     nodes: [
       {
+        id: "gh-spotifytoytmusic",
+        title: "SpotifytoYTMusicSync",
+        subtitle: "Transfer/sync Spotify playlists to ytm. Auto/manual playlists.",
+        tag: "Python • ★ 13",
+        url: "https://github.com/kunal1320k/SpotifytoYTMusicSync",
+        subBranches: [
+          { title: "★ 13 Stars • 1 Fork", artist: "Language: Python", duration: "Public", url: "https://github.com/kunal1320k/SpotifytoYTMusicSync" },
+          { title: "High Accuracy Sync", artist: "Spotify to YouTube Music transfer", duration: "Repo ↗", url: "https://github.com/kunal1320k/SpotifytoYTMusicSync" },
+          { title: "View on GitHub", artist: "Browse source code", duration: "github.com", url: "https://github.com/kunal1320k/SpotifytoYTMusicSync" }
+        ]
+      },
+      {
+        id: "gh-chemocr",
+        title: "ChemOCR",
+        subtitle: "Lite model OCR for chemical structures to standard formats",
+        tag: "Python • ★ 2",
+        url: "https://github.com/kunal1320k/ChemOCR",
+        subBranches: [
+          { title: "★ 2 Stars", artist: "Chemical Structure OCR", duration: "Python", url: "https://github.com/kunal1320k/ChemOCR" },
+          { title: "Structure Formats", artist: "Export for computational chemistry", duration: "Repo ↗", url: "https://github.com/kunal1320k/ChemOCR" }
+        ]
+      },
+      {
+        id: "gh-exeiconchanger",
+        title: "ExeIconChanger",
+        subtitle: "C++ tool to change EXE icons with bicubic interpolation resizing",
+        tag: "C++",
+        url: "https://github.com/kunal1320k/ExeIconChanger",
+        subBranches: [
+          { title: "Bicubic Interpolation", artist: "High-performance smart resizing", duration: "C++", url: "https://github.com/kunal1320k/ExeIconChanger" },
+          { title: "Auto Image-to-Icon", artist: "Direct PE header icon rewrite", duration: "Repo ↗", url: "https://github.com/kunal1320k/ExeIconChanger" }
+        ]
+      },
+      {
+        id: "gh-oneclicksort",
+        title: "OneClickSort",
+        subtitle: "Automatically move files into folders according to their file type",
+        tag: "PowerShell",
+        url: "https://github.com/kunal1320k/OneClickSort",
+        subBranches: [
+          { title: "Automated File Sorting", artist: "Organize files by extension", duration: "PowerShell", url: "https://github.com/kunal1320k/OneClickSort" },
+          { title: "One-Click Execution", artist: "Clean up downloads & folders", duration: "Repo ↗", url: "https://github.com/kunal1320k/OneClickSort" }
+        ]
+      },
+      {
+        id: "gh-proxyswitcher",
+        title: "Proxy-Switcher-Powershell",
+        subtitle: "PowerShell script simplifying Windows proxy management",
+        tag: "PowerShell",
+        url: "https://github.com/kunal1320k/Proxy-Switcher-Powershell",
+        subBranches: [
+          { title: "Windows Proxy Manager", artist: "Fast network toggle script", duration: "PowerShell", url: "https://github.com/kunal1320k/Proxy-Switcher-Powershell" }
+        ]
+      },
+      {
         id: "gh-myprofile",
-        title: "kunal1320k/myprofile",
-        subtitle: "Autumn aesthetic profile with live Spotify sync & tree canvas",
-        tag: "HTML / CSS / JS",
+        title: "myprofile",
+        subtitle: "halo — Autumn aesthetic profile with live Spotify sync",
+        tag: "JavaScript",
         url: "https://github.com/kunal1320k/myprofile",
         subBranches: [
-          { title: "★ Public Repository", artist: "Active Pair Project", duration: "GitHub", url: "https://github.com/kunal1320k/myprofile" },
-          { title: "Tree Branching Engine", artist: "Bezier Curves & Collision Avoidance", duration: "Feature", url: "https://github.com/kunal1320k/myprofile" },
-          { title: "Recent Commits", artist: "Clean pill dock & audio theme", duration: "Git Log", url: "https://github.com/kunal1320k/myprofile/commits/main" }
+          { title: "Interactive Canvas & Tree", artist: "Full personal portfolio", duration: "JavaScript", url: "https://github.com/kunal1320k/myprofile" },
+          { title: "Commits & Updates", artist: "Live synced features", duration: "GitHub", url: "https://github.com/kunal1320k/myprofile/commits/main" }
         ]
       },
       {
-        id: "gh-lyrics",
-        title: "spotify-lyrics-sync",
-        subtitle: "Real-time synced lyrics display via Lanyard & Last.fm API",
-        tag: "TypeScript",
-        url: "https://github.com/kunal1320k",
+        id: "gh-telegramuploader",
+        title: "basic-telegram-file-uploader",
+        subtitle: "Upload files from any drive location directly to telegram channel",
+        tag: "Python",
+        url: "https://github.com/kunal1320k/basic-telegram-file-uploader",
         subBranches: [
-          { title: "WebSocket Real-time Engine", artist: "Lanyard & LRCLIB Protocol", duration: "Live API", url: "https://github.com/kunal1320k" },
-          { title: "Dynamic Timecode Parser", artist: "Fluid smooth lyric scroll", duration: "Engine", url: "https://github.com/kunal1320k" }
-        ]
-      },
-      {
-        id: "gh-canvas",
-        title: "autumn-canvas-physics",
-        subtitle: "Procedural recursive tree branching with foliage buffer",
-        tag: "Canvas 2D",
-        url: "https://github.com/kunal1320k",
-        subBranches: [
-          { title: "Generative Tree Growth", artist: "Recursive bezier branch physics", duration: "Math", url: "https://github.com/kunal1320k" },
-          { title: "Autumn Leaves Particle Sim", artist: "Wind flutter & depth 3D parallax", duration: "Physics", url: "https://github.com/kunal1320k" }
-        ]
-      },
-      {
-        id: "gh-anime",
-        title: "anime-watchlist-tracker",
-        subtitle: "MAL syncing dashboard with rating analytics & dark mode",
-        tag: "Vue / Tailwind",
-        url: "https://github.com/kunal1320k",
-        subBranches: [
-          { title: "Jikan API Integration", artist: "Real-time score & progress sync", duration: "API", url: "https://github.com/kunal1320k" },
-          { title: "Minimalist Grid", artist: "Custom cover art cards", duration: "UI", url: "https://github.com/kunal1320k" }
+          { title: "Telegram Channel Bot", artist: "Drive to Telegram upload automation", duration: "Python", url: "https://github.com/kunal1320k/basic-telegram-file-uploader" }
         ]
       }
     ]
   },
   youtube: {
-    title: "YouTube Playlists",
+    title: "YouTube Channel",
     badge: "Video",
     icon: `<svg viewBox="0 0 24 24" width="16" height="16" fill="#ff0033"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>`,
     profileUrl: "https://www.youtube.com/@kunal1320k",
     nodes: [
       {
-        id: "yt-favorites",
-        title: "Favorites & Acoustic Beats",
-        subtitle: "kunal1320k • Curated playlist",
-        tag: "Music",
+        id: "yt-channel",
+        title: "YouTube Channel",
+        subtitle: "@kunal1320k",
+        tag: "Channel",
         url: "https://www.youtube.com/@kunal1320k",
         subBranches: [
-          { title: "Coldplay - The Scientist", artist: "Coldplay (Official 4K)", duration: "4:26", url: "https://www.youtube.com/watch?v=RB-RcX5DS5A" },
-          { title: "Plain White T's - Hey There Delilah", artist: "Hollywood Records", duration: "3:53", url: "https://www.youtube.com/watch?v=h_m-BjrxmgI" },
-          { title: "Yellow - Live in São Paulo", artist: "Coldplay", duration: "4:35", url: "https://www.youtube.com" }
+          { title: "Visit @kunal1320k", artist: "Official YouTube Channel", duration: "Open ↗", url: "https://www.youtube.com/@kunal1320k" },
+          { title: "Channel Playlists", artist: "Saved & Created Playlists", duration: "Playlists ↗", url: "https://www.youtube.com/@kunal1320k/playlists" }
         ]
       },
       {
-        id: "yt-lofi",
-        title: "Chillhop & Coding Radio",
-        subtitle: "Beats to relax / study / code to",
-        tag: "Livestreams",
-        url: "https://www.youtube.com/@kunal1320k",
+        id: "yt-playlists",
+        title: "Playlists & Music",
+        subtitle: "kunal1320k Playlists",
+        tag: "Playlists",
+        url: "https://www.youtube.com/@kunal1320k/playlists",
         subBranches: [
-          { title: "Lofi Girl - beats to study to", artist: "Lofi Girl", duration: "24/7 Live", url: "https://youtube.com" },
-          { title: "Synthwave Radio - Chill Synth", artist: "Lofi Girl", duration: "24/7 Live", url: "https://youtube.com" }
-        ]
-      },
-      {
-        id: "yt-anime",
-        title: "Anime AMVs & OSTs",
-        subtitle: "Orchestral themes & openings",
-        tag: "Soundtracks",
-        url: "https://www.youtube.com/@kunal1320k",
-        subBranches: [
-          { title: "Sousou no Frieren OST - Evan Call", artist: "TOHO animation", duration: "Soundtrack", url: "https://youtube.com" },
-          { title: "Vinland Saga - Drown by milet", artist: "Sony Music", duration: "4:10", url: "https://youtube.com" }
+          { title: "View All Playlists", artist: "@kunal1320k Playlists", duration: "YouTube", url: "https://www.youtube.com/@kunal1320k/playlists" }
         ]
       }
     ]
   },
   myanimelist: {
-    title: "MyAnimeList Favorites",
+    title: "MyAnimeList",
     badge: "Anime",
     icon: `<svg viewBox="0 0 24 24" width="16" height="16" fill="#2e51a2"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 14.5h-2v-2h2v2zm0-4h-2V7h2v5.5z"/></svg>`,
     profileUrl: "https://myanimelist.net/profile/kunal1320k",
@@ -1725,119 +1860,116 @@ const BRANCH_DATA = {
       {
         id: "mal-frieren",
         title: "Sousou no Frieren",
-        subtitle: "Score: ★ 9.35 • Madhouse • 28 eps",
-        tag: "Masterpiece",
+        subtitle: "Score: ★ 10/10 • 28/28 eps",
+        tag: "Completed",
         url: "https://myanimelist.net/anime/52991/Sousou_no_Frieren",
         subBranches: [
-          { title: "Rank #1 on MyAnimeList", artist: "Adventure, Drama, Fantasy", duration: "Completed", url: "https://myanimelist.net/anime/52991" },
-          { title: "Studio: Madhouse", artist: "Dir: Keiichirou Saitou", duration: "2023-2024", url: "https://myanimelist.net/anime/52991" }
+          { title: "Score: 10/10 (Masterpiece)", artist: "Watched: 28/28 episodes", duration: "Completed", url: "https://myanimelist.net/anime/52991" },
+          { title: "Rank #1 on MAL", artist: "Adventure, Drama, Fantasy", duration: "MAL ↗", url: "https://myanimelist.net/anime/52991" }
+        ]
+      },
+      {
+        id: "mal-aot",
+        title: "Shingeki no Kyojin",
+        subtitle: "Score: ★ 10/10 • 25/25 eps",
+        tag: "Completed",
+        url: "https://myanimelist.net/anime/16498/Shingeki_no_Kyojin",
+        subBranches: [
+          { title: "Score: 10/10 (Masterpiece)", artist: "Watched: 25/25 episodes", duration: "Completed", url: "https://myanimelist.net/anime/16498" },
+          { title: "Attack on Titan", artist: "Action, Mystery, Drama", duration: "MAL ↗", url: "https://myanimelist.net/anime/16498" }
+        ]
+      },
+      {
+        id: "mal-aots3p2",
+        title: "Shingeki no Kyojin S3 Part 2",
+        subtitle: "Score: ★ 10/10 • 10/10 eps",
+        tag: "Completed",
+        url: "https://myanimelist.net/anime/38524/Shingeki_no_Kyojin_Season_3_Part_2",
+        subBranches: [
+          { title: "Score: 10/10 (Masterpiece)", artist: "Watched: 10/10 episodes", duration: "Completed", url: "https://myanimelist.net/anime/38524" },
+          { title: "Wit Studio", artist: "Action, Suspense", duration: "MAL ↗", url: "https://myanimelist.net/anime/38524" }
         ]
       },
       {
         id: "mal-steinsgate",
         title: "Steins;Gate",
-        subtitle: "Score: ★ 9.07 • White Fox • 24 eps",
-        tag: "Sci-Fi",
+        subtitle: "Score: ★ 9/10 • 24/24 eps",
+        tag: "Completed",
         url: "https://myanimelist.net/anime/9253/Steins_Gate",
         subBranches: [
-          { title: "Time Travel Classic", artist: "Okabe Rintarou & Kurisu", duration: "Score 9.07", url: "https://myanimelist.net/anime/9253" },
-          { title: "White Fox Animation", artist: "Psychological / Suspense", duration: "Completed", url: "https://myanimelist.net/anime/9253" }
+          { title: "Score: 9/10 (Great)", artist: "Watched: 24/24 episodes", duration: "Completed", url: "https://myanimelist.net/anime/9253" },
+          { title: "White Fox Animation", artist: "Sci-Fi, Psychological, Suspense", duration: "MAL ↗", url: "https://myanimelist.net/anime/9253" }
         ]
       },
       {
-        id: "mal-hxh",
-        title: "Hunter x Hunter (2011)",
-        subtitle: "Score: ★ 9.04 • Madhouse • 148 eps",
-        tag: "Shounen Peak",
-        url: "https://myanimelist.net/anime/11061/Hunter_x_Hunter_2011",
+        id: "mal-eva",
+        title: "Shinseiki Evangelion",
+        subtitle: "Score: ★ 9/10 • 26/26 eps",
+        tag: "Completed",
+        url: "https://myanimelist.net/anime/30/Shinseiki_Evangelion",
         subBranches: [
-          { title: "Chimera Ant Arc", artist: "Action, Adventure, Fantasy", duration: "Completed", url: "https://myanimelist.net/anime/11061" }
+          { title: "Score: 9/10 (Great)", artist: "Watched: 26/26 episodes", duration: "Completed", url: "https://myanimelist.net/anime/30" },
+          { title: "Neon Genesis Evangelion", artist: "Mecha, Psychological, Drama", duration: "MAL ↗", url: "https://myanimelist.net/anime/30" }
         ]
       },
       {
-        id: "mal-vinland",
-        title: "Vinland Saga Season 2",
-        subtitle: "Score: ★ 8.80 • MAPPA • 24 eps",
-        tag: "Seinen",
-        url: "https://myanimelist.net/anime/49828/Vinland_Saga_Season_2",
+        id: "mal-violet",
+        title: "Violet Evergarden",
+        subtitle: "Score: ★ 8/10 • 13/13 eps",
+        tag: "Completed",
+        url: "https://myanimelist.net/anime/33352/Violet_Evergarden",
         subBranches: [
-          { title: "I Have No Enemies", artist: "Thorfinn's path of redemption", duration: "Score 8.80", url: "https://myanimelist.net/anime/49828" }
+          { title: "Score: 8/10 (Very Good)", artist: "Watched: 13/13 episodes", duration: "Completed", url: "https://myanimelist.net/anime/33352" },
+          { title: "Kyoto Animation", artist: "Drama, Fantasy", duration: "MAL ↗", url: "https://myanimelist.net/anime/33352" }
+        ]
+      },
+      {
+        id: "mal-oshinoko",
+        title: "[Oshi no Ko]",
+        subtitle: "Score: ★ 7/10 • 11/11 eps",
+        tag: "Completed",
+        url: "https://myanimelist.net/anime/52034/Oshi_no_Ko",
+        subBranches: [
+          { title: "Score: 7/10 (Good)", artist: "Watched: 11/11 episodes", duration: "Completed", url: "https://myanimelist.net/anime/52034" },
+          { title: "Doga Kobo", artist: "Drama, Supernatural", duration: "MAL ↗", url: "https://myanimelist.net/anime/52034" }
         ]
       }
     ]
   },
   reddit: {
-    title: "Reddit Communities",
-    badge: "Community",
+    title: "Reddit",
+    badge: "Reddit",
     icon: `<svg viewBox="0 0 24 24" width="16" height="16" fill="#ff4500"><path d="M12 0C5.373 0 0 5.373 0 12c0 3.314 1.343 6.314 3.515 8.485l-1.222 3.666 3.844-1.127C7.943 23.633 9.897 24 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm5.01 13c-.643 0-1.165-.521-1.165-1.165s.522-1.165 1.165-1.165c.644 0 1.165.521 1.165 1.165S17.654 13 17.01 13zm-10.02 0c-.643 0-1.165-.521-1.165-1.165s.522-1.165 1.165-1.165c.644 0 1.165.521 1.165 1.165S7.634 13 6.99 13zm8.385 3.328c-.856.856-2.222.92-3.375.92s-2.519-.064-3.375-.92c-.228-.228-.228-.598 0-.826.228-.228.598-.228.826 0 .616.616 1.713.682 2.549.682s1.933-.066 2.549-.682c.228-.228.598-.228.826 0 .228.228.228.598 0 .826z"/></svg>`,
     profileUrl: "https://www.reddit.com/user/Juicy-Jam-987/",
     nodes: [
       {
-        id: "rd-webdev",
-        title: "r/webdev & r/javascript",
-        subtitle: "Creative coding, CSS animations & frontend experiments",
-        tag: "Dev",
+        id: "rd-profile",
+        title: "u/Juicy-Jam-987",
+        subtitle: "Reddit User Profile",
+        tag: "User",
         url: "https://www.reddit.com/user/Juicy-Jam-987/",
         subBranches: [
-          { title: "Frontend Architecture", artist: "Web canvas & interactive physics", duration: "Posts", url: "https://reddit.com/r/webdev" }
-        ]
-      },
-      {
-        id: "rd-anime",
-        title: "r/anime & r/manga",
-        subtitle: "Seasonal episode discussions, theories & review threads",
-        tag: "Anime",
-        url: "https://www.reddit.com/user/Juicy-Jam-987/",
-        subBranches: [
-          { title: "Episode Discussions", artist: "Frieren & Shounen breakdowns", duration: "Discussions", url: "https://reddit.com/r/anime" }
-        ]
-      },
-      {
-        id: "rd-unixporn",
-        title: "r/unixporn",
-        subtitle: "Minimalist desktop customization, dark modes & ricing",
-        tag: "Theme",
-        url: "https://reddit.com/r/unixporn",
-        subBranches: [
-          { title: "Autumn Theme Colors", artist: "Warm glow, blur & glassmorphism", duration: "Setups", url: "https://reddit.com/r/unixporn" }
+          { title: "View Profile", artist: "u/Juicy-Jam-987", duration: "Reddit ↗", url: "https://www.reddit.com/user/Juicy-Jam-987/" },
+          { title: "Submitted Posts", artist: "Reddit Submissions", duration: "Reddit ↗", url: "https://www.reddit.com/user/Juicy-Jam-987/submitted/" }
         ]
       }
     ]
   },
   steam: {
-    title: "Steam Gaming Library",
+    title: "Steam Profile",
     badge: "Gaming",
     icon: `<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M11.979 0C5.678 0 .511 4.86.022 11.037l6.432 2.658c.545-.371 1.203-.59 1.912-.59.063 0 .125.004.188.008l2.861-4.142V8.91c0-2.495 2.028-4.524 4.524-4.524 2.494 0 4.524 2.029 4.524 4.524s-2.03 4.524-4.524 4.524h-.105l-4.076 2.911c0 .052.005.105.005.159 0 1.875-1.515 3.396-3.39 3.396-1.635 0-3.016-1.155-3.331-2.693L.437 14.8C1.849 20.084 6.641 24 12.333 24c6.627 0 12-5.373 12-12S18.606 0 11.979 0z"/></svg>`,
     profileUrl: "https://steamcommunity.com/id/kunal1320k/",
     nodes: [
       {
-        id: "st-cs2",
-        title: "Counter-Strike 2",
-        subtitle: "Competitive tactical shooter • 1,200+ hrs",
-        tag: "FPS",
+        id: "st-profile",
+        title: "kunal1320k",
+        subtitle: "Level 4 • Steam Community Profile",
+        tag: "Steam",
         url: "https://steamcommunity.com/id/kunal1320k/",
         subBranches: [
-          { title: "Premier Rank: Active", artist: "Competitive 5v5", duration: "1,200 hrs", url: "https://steamcommunity.com/id/kunal1320k/" }
-        ]
-      },
-      {
-        id: "st-eldenring",
-        title: "Elden Ring",
-        subtitle: "FromSoftware • Shadow of the Erdtree DLC",
-        tag: "Action RPG",
-        url: "https://steamcommunity.com/id/kunal1320k/",
-        subBranches: [
-          { title: "All Bosses Cleared", artist: "Erdtree Expansion Completed", duration: "180 hrs", url: "https://steamcommunity.com/id/kunal1320k/" }
-        ]
-      },
-      {
-        id: "st-hollowknight",
-        title: "Hollow Knight",
-        subtitle: "Team Cherry • Metroidvania Masterpiece",
-        tag: "Indie",
-        url: "https://steamcommunity.com/id/kunal1320k/",
-        subBranches: [
-          { title: "Pantheon of Hallownest", artist: "112% Completionist", duration: "Mastery", url: "https://steamcommunity.com/id/kunal1320k/" }
+          { title: "Steam Profile", artist: "Level 4 • kunal1320k", duration: "Steam ↗", url: "https://steamcommunity.com/id/kunal1320k/" },
+          { title: "Games & Badges", artist: "Community Activity", duration: "Steam ↗", url: "https://steamcommunity.com/id/kunal1320k/games/?tab=all" }
         ]
       }
     ]
@@ -1851,65 +1983,99 @@ const BRANCH_DATA = {
       {
         id: "tg-direct",
         title: "@kunal1320k",
-        subtitle: "Direct messaging, questions & collaboration reachout",
-        tag: "Instant Message",
+        subtitle: "Direct messaging & contact",
+        tag: "Telegram",
         url: "https://t.me/kunal1320k",
         subBranches: [
-          { title: "Chat on Telegram", artist: "Active 24/7", duration: "t.me", url: "https://t.me/kunal1320k" },
-          { title: "Channel Updates", artist: "Aesthetics, music & dev logs", duration: "Public", url: "https://t.me/kunal1320k" }
+          { title: "Chat on Telegram", artist: "@kunal1320k", duration: "Direct ↗", url: "https://t.me/kunal1320k" }
         ]
       }
     ]
   }
 };
 
-// ── LIVE DYNAMIC UPDATES FOR REPOS & PLAYLISTS ──────────────────────────────
-async function syncLiveGitHubData() {
+// ── LIVE DYNAMIC UPDATES (GITHUB API + LOCAL DATA FILES) ────────────────────
+async function syncRealDataSources() {
+  // 1. Sync from local data files if present (data/myanimelist.json, data/spotify.json, data/github.json)
   try {
-    const cached = localStorage.getItem('kunal1320k_gh_cache');
-    if (cached) {
-      const parsed = JSON.parse(cached);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        applyGitHubReposToBranch(parsed);
+    const malRes = await fetch('data/myanimelist.json');
+    if (malRes.ok) {
+      const malJson = await malRes.json();
+      if (malJson.anime && Array.isArray(malJson.anime) && malJson.anime.length > 0) {
+        BRANCH_DATA.myanimelist.nodes = malJson.anime.slice(0, 8).map(a => ({
+          id: `mal-${a.id}`,
+          title: a.title,
+          subtitle: a.subtitle || `Score: ${a.score}/10`,
+          tag: a.status || "Completed",
+          url: a.url,
+          subBranches: [
+            { title: `Score: ${a.score}/10`, artist: `Episodes: ${a.watched_episodes}/${a.total_episodes}`, duration: a.status || "MAL", url: a.url },
+            { title: "View on MyAnimeList", artist: a.title, duration: "MAL ↗", url: a.url }
+          ]
+        }));
       }
     }
-    const res = await fetch('https://api.github.com/users/kunal1320k/repos?sort=updated&per_page=6');
-    if (!res.ok) return;
-    const repos = await res.json();
-    if (Array.isArray(repos) && repos.length > 0) {
-      localStorage.setItem('kunal1320k_gh_cache', JSON.stringify(repos));
-      applyGitHubReposToBranch(repos);
+  } catch (_) {}
+
+  try {
+    const spRes = await fetch('data/spotify.json');
+    if (spRes.ok) {
+      const spJson = await spRes.json();
+      if (spJson.playlists && Array.isArray(spJson.playlists) && spJson.playlists.length > 0) {
+        BRANCH_DATA.spotify.nodes = spJson.playlists.map(p => ({
+          id: `sp-${p.id}`,
+          title: p.title,
+          subtitle: p.subtitle,
+          tag: "Playlist",
+          url: p.url,
+          subBranches: (p.songs || []).map(s => ({
+            title: s.title,
+            artist: s.artist,
+            duration: s.duration || "play ↗",
+            url: s.url
+          }))
+        }));
+      }
     }
-  } catch (_) {
-    // Graceful offline fallback to predefined repos
-  }
+  } catch (_) {}
+
+  // 2. Sync live GitHub repos directly from API
+  try {
+    const res = await fetch('https://api.github.com/users/kunal1320k/repos?sort=updated&per_page=10');
+    if (res.ok) {
+      const repos = await res.json();
+      if (Array.isArray(repos) && repos.length > 0) {
+        applyGitHubReposToBranch(repos);
+      }
+    }
+  } catch (_) {}
 }
 
 function applyGitHubReposToBranch(repos) {
   if (!BRANCH_DATA.github) return;
-  const newNodes = repos.slice(0, 5).map(repo => ({
-    id: `gh-${repo.name}`,
-    title: repo.name,
-    subtitle: repo.description || "Public repository by kunal1320k",
-    tag: repo.language || "Project",
-    url: repo.html_url,
-    subBranches: [
-      {
-        title: `★ Stars: ${repo.stargazers_count} • Forks: ${repo.forks_count}`,
-        artist: `Updated: ${new Date(repo.updated_at).toLocaleDateString()}`,
-        duration: "Repo Info",
-        url: repo.html_url
-      },
-      {
-        title: "Browse Source Code",
-        artist: `Default branch: ${repo.default_branch || 'main'}`,
-        duration: "GitHub ↗",
-        url: repo.html_url
-      }
-    ]
-  }));
-  if (newNodes.length > 0) {
-    BRANCH_DATA.github.nodes = newNodes;
+  const filtered = repos.filter(r => r.name);
+  if (filtered.length > 0) {
+    BRANCH_DATA.github.nodes = filtered.slice(0, 7).map(repo => ({
+      id: `gh-${repo.name}`,
+      title: repo.name,
+      subtitle: repo.description || "kunal1320k repository",
+      tag: repo.language ? `${repo.language}${repo.stargazers_count ? ` • ★ ${repo.stargazers_count}` : ''}` : (repo.stargazers_count ? `★ ${repo.stargazers_count}` : "Project"),
+      url: repo.html_url,
+      subBranches: [
+        {
+          title: `★ Stars: ${repo.stargazers_count || 0} • Forks: ${repo.forks_count || 0}`,
+          artist: `Language: ${repo.language || 'Code'}`,
+          duration: "Repo Info",
+          url: repo.html_url
+        },
+        {
+          title: "Browse Source Code",
+          artist: `Updated: ${new Date(repo.updated_at).toLocaleDateString()}`,
+          duration: "GitHub ↗",
+          url: repo.html_url
+        }
+      ]
+    }));
   }
 }
 
@@ -1985,103 +2151,128 @@ function hideBranchTree() {
   activeBranchSourceElem = null;
 }
 
+function updateBranchSvgDimensions() {
+  if (!branchTreeSvg) return;
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+  branchTreeSvg.setAttribute("width", `${w}`);
+  branchTreeSvg.setAttribute("height", `${h}`);
+  branchTreeSvg.setAttribute("viewBox", `0 0 ${w} ${h}`);
+  branchTreeSvg.style.width = `${w}px`;
+  branchTreeSvg.style.height = `${h}px`;
+}
+
 // Generates an organic cubic bezier path from source (x0, y0) to target (x1, y1)
 function createBranchPath(x0, y0, x1, y1, isSecondary = false) {
   const dx = x1 - x0;
   const dy = y1 - y0;
 
-  // Natural tree-branch curvature with organic control tangents
-  const cx1 = x0 + dx * (isSecondary ? 0.35 : 0.45);
-  const cy1 = y0 + dy * 0.08;
-  const cx2 = x0 + dx * (isSecondary ? 0.65 : 0.70);
-  const cy2 = y1 - dy * 0.08;
+  // Natural organic tree-branch curvature with clean horizontal exit and entry tangents
+  const cx1 = x0 + dx * (isSecondary ? 0.38 : 0.46);
+  const cy1 = y0 + dy * 0.04;
+  const cx2 = x0 + dx * (isSecondary ? 0.65 : 0.74);
+  const cy2 = y1 - dy * 0.04;
 
   const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
   path.setAttribute("d", `M ${x0.toFixed(1)} ${y0.toFixed(1)} C ${cx1.toFixed(1)} ${cy1.toFixed(1)}, ${cx2.toFixed(1)} ${cy2.toFixed(1)}, ${x1.toFixed(1)} ${y1.toFixed(1)}`);
   path.setAttribute("class", `tree-branch-line ${isSecondary ? 'secondary' : ''}`);
+  path.setAttribute("fill", "none");
+  path.setAttribute("stroke", isSecondary ? "rgba(255, 255, 255, 0.5)" : "rgba(255, 255, 255, 0.88)");
+  path.setAttribute("stroke-width", isSecondary ? "1.4" : "1.8");
+  path.setAttribute("stroke-linecap", "round");
+  path.setAttribute("stroke-linejoin", "round");
 
-  // Animated draw-in effect
-  const approxLength = Math.sqrt(dx * dx + dy * dy) * 1.35;
+  // Animated draw-in effect with guaranteed visibility
+  const approxLength = Math.max(Math.ceil(Math.hypot(dx, dy) * 1.35) + 30, 80);
   path.style.strokeDasharray = `${approxLength}`;
   path.style.strokeDashoffset = `${approxLength}`;
-  path.style.animation = `treeBranchGrow 0.38s cubic-bezier(0.16, 1, 0.3, 1) forwards`;
+
+  // Execute drawing animation via Web Animations API
+  try {
+    path.animate(
+      [
+        { strokeDashoffset: `${approxLength}`, opacity: 0.35 },
+        { strokeDashoffset: '0', opacity: 1 }
+      ],
+      {
+        duration: 300,
+        easing: 'cubic-bezier(0.16, 1, 0.3, 1)',
+        fill: 'forwards'
+      }
+    );
+  } catch (_) {}
+
+  // Fallback to guarantee the white line is 100% visible
+  setTimeout(() => {
+    if (path.isConnected) {
+      path.style.strokeDashoffset = '0';
+      path.style.opacity = '1';
+    }
+  }, 320);
 
   return path;
 }
 
-// Glowing joint dot at fork or node attachment
-function createBranchDot(x, y) {
+// Clean solid joint dot at fork or node attachment (no brown outline)
+function createBranchDot(x, y, isSecondary = false) {
   const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
   circle.setAttribute("cx", x.toFixed(1));
   circle.setAttribute("cy", y.toFixed(1));
-  circle.setAttribute("r", "3.2");
-  circle.setAttribute("class", "tree-branch-node-dot");
+  circle.setAttribute("r", isSecondary ? "2.5" : "3.2");
+  circle.setAttribute("class", `tree-branch-node-dot ${isSecondary ? 'secondary' : ''}`);
+  circle.setAttribute("fill", isSecondary ? "rgba(232, 226, 217, 0.8)" : "#ffffff");
   return circle;
 }
 
-// Layout primary branch nodes safely without EVER overlapping #spotify-card or each other
-function computeSafeBranchPositions(sourceRect, nodeCount) {
+// Layout primary branch nodes safely without EVER overlapping #spotify-card or links-grid
+function computeSafeBranchPositions(sourceRect, nodeCount, key) {
   const spotifyCardElem = document.getElementById('spotify-card');
   const spRect = spotifyCardElem ? spotifyCardElem.getBoundingClientRect() : null;
+  const linksGridElem = document.getElementById('links-grid');
+  const gridRect = linksGridElem ? linksGridElem.getBoundingClientRect() : null;
   const vw = window.innerWidth;
   const vh = window.innerHeight;
 
-  const cardW = 230;
-  const cardH = 65;
-  const gapY = 12;
+  const cardW = 250;
+  const cardH = 76;
+  const maxNodes = Math.min(nodeCount, 4); // Display top 4 primary cards as shown in sketch
 
-  const x0 = sourceRect.right;
-  const y0 = sourceRect.top + sourceRect.height / 2;
+  // Horizontal position:
+  // Must be strictly to the right of the links grid (min 36px clear of telegram / steam)
+  const minSafeX = (gridRect ? gridRect.right : 340) + 36;
+  // Align into the open column underneath the Spotify player card
+  let targetX = spRect ? Math.max(minSafeX, spRect.left + 16) : minSafeX;
+  if (targetX + cardW > vw - 24) {
+    targetX = vw - cardW - 24;
+  }
+  if (targetX < minSafeX) {
+    targetX = minSafeX;
+  }
+
+  // Vertical position:
+  // Positioned directly below the Spotify player card in the open area
+  const spBottom = spRect ? spRect.bottom : 260;
+  let startY = spBottom + 20;
+
+  // Dynamic vertical gap calculation to ensure zero overlap between cards
+  const availableH = vh - startY - 24;
+  let gapY = 16;
+  if (availableH < maxNodes * cardH + (maxNodes - 1) * gapY) {
+    gapY = Math.max(8, Math.floor((availableH - maxNodes * cardH) / Math.max(1, maxNodes - 1)));
+  }
+
+  // Viewport bottom boundary protection
+  if (startY + maxNodes * cardH + (maxNodes - 1) * gapY > vh - 16) {
+    startY = Math.max(spBottom + 10, vh - 16 - (maxNodes * cardH + (maxNodes - 1) * gapY));
+  }
 
   const positions = [];
-
-  // Preferred corridor X: offset horizontally into the clear space
-  let preferredX = Math.min(x0 + 65, vw - cardW - 30);
-
-  // Buffer around Spotify card (card + 20px padding)
-  const spPad = 22;
-  const spLeft = spRect ? (spRect.left - spPad) : vw;
-  const spRight = spRect ? (spRect.right + spPad) : vw;
-  const spTop = spRect ? (spRect.top - spPad) : 0;
-  const spBottom = spRect ? (spRect.bottom + spPad) : 0;
-
-  for (let i = 0; i < nodeCount; i++) {
-    let targetX = preferredX;
-    let targetY;
-
-    // Check if source card is in the top section
-    if (spRect && y0 < spBottom) {
-      // Space directly under the spotify card is open and matches the user's sketch perfectly
-      const safeUnderSpotify = spBottom + 16;
-      targetX = Math.min(preferredX + (i % 2 === 0 ? 0 : 28), vw - cardW - 25);
-      targetY = safeUnderSpotify + i * (cardH + gapY);
-    } else {
-      // Source is below Spotify card: fan out downward with natural tree branch stagger
-      targetX = Math.min(x0 + 50 + (i * 22), vw - cardW - 25);
-      targetY = y0 - 25 + i * (cardH + gapY);
-    }
-
-    // Viewport bottom boundary check
-    if (targetY + cardH > vh - 20) {
-      targetY = vh - cardH - 20 - (nodeCount - 1 - i) * (cardH + gapY);
-    }
-    if (targetY < 25) targetY = 25;
-
-    // Direct collision check against Spotify Card rect:
-    if (spRect) {
-      const collides = (
-        targetX + cardW > spLeft &&
-        targetX < spRight &&
-        targetY + cardH > spTop &&
-        targetY < spBottom
-      );
-      if (collides) {
-        // Force placement below Spotify card
-        targetY = spBottom + 16 + i * (cardH + gapY);
-      }
-    }
-
-    positions.push({ x: targetX, y: targetY });
+  for (let i = 0; i < maxNodes; i++) {
+    // Organic stagger offset matching real tree branch leaves (as in user sketch)
+    const staggerX = (i % 2 === 1) ? 22 : 0;
+    const finalX = Math.min(targetX + staggerX, vw - cardW - 16);
+    const finalY = startY + i * (cardH + gapY);
+    positions.push({ x: finalX, y: finalY });
   }
 
   return positions;
@@ -2092,6 +2283,7 @@ function renderPrimaryBranches(key, sourceElem) {
   const data = BRANCH_DATA[key];
   if (!data || !data.nodes || data.nodes.length === 0) return;
 
+  updateBranchSvgDimensions();
   clearBranchSvg();
   clearBranchNodes();
 
@@ -2099,21 +2291,28 @@ function renderPrimaryBranches(key, sourceElem) {
   const x0 = sourceRect.right;
   const y0 = sourceRect.top + sourceRect.height / 2;
 
+  // Add clean origin joint dot directly on the hovered link
+  const originDot = createBranchDot(x0, y0, false);
+  branchTreeSvg.appendChild(originDot);
+
   const nodes = data.nodes;
-  const positions = computeSafeBranchPositions(sourceRect, nodes.length);
+  const positions = computeSafeBranchPositions(sourceRect, nodes.length, key);
+  const cardH = 76;
 
   // Draw organic curves & place cards
-  nodes.forEach((node, i) => {
-    const pos = positions[i];
-    const x1 = pos.x;
-    const y1 = pos.y + 32; // Attach branch to middle-left of card
+  positions.forEach((pos, i) => {
+    const node = nodes[i];
+    if (!node) return;
 
-    // SVG Branch Path
+    const x1 = pos.x;
+    const y1 = pos.y + cardH / 2; // Attach branch to vertical middle-left of card
+
+    // SVG Branch Path (Clean sharp white, no fuzzy glow)
     const branchPath = createBranchPath(x0, y0, x1, y1, false);
     branchTreeSvg.appendChild(branchPath);
 
-    // Fork Dot
-    const dot = createBranchDot(x1, y1);
+    // Fork Dot at card attachment
+    const dot = createBranchDot(x1, y1, false);
     branchTreeSvg.appendChild(dot);
 
     // Leaf Card Element
@@ -2124,29 +2323,37 @@ function renderPrimaryBranches(key, sourceElem) {
     card.rel = 'noopener noreferrer';
     card.style.left = `${pos.x}px`;
     card.style.top = `${pos.y}px`;
-    card.style.animationDelay = `${i * 0.05}s`;
+    card.style.animationDelay = `${i * 0.04}s`;
     card.dataset.nodeId = node.id;
 
-    const subCount = node.subBranches ? node.subBranches.length : 0;
-    const subHint = subCount > 0 ? `<span class="card-tag" style="background:rgba(255,255,255,0.12);color:#ffffff;">${subCount} songs ↗</span>` : '';
+    // Format clean details text without pills or brown boxes
+    let detailText = '';
+    if (key === 'github') {
+      detailText = node.tag || '';
+    } else if (key === 'spotify') {
+      detailText = node.subtitle || (node.subBranches ? `${node.subBranches.length} songs` : 'Playlist');
+    } else if (key === 'myanimelist') {
+      detailText = node.subtitle || 'Completed';
+    } else if (key === 'youtube') {
+      detailText = node.subtitle || 'Channel';
+    } else if (key === 'reddit' || key === 'steam' || key === 'telegram') {
+      detailText = node.subtitle || node.tag || '';
+    }
 
     card.innerHTML = `
-      <div class="card-header">
+      <div class="card-head">
         <span class="card-title">${escapeHtml(node.title)}</span>
         <span class="card-arrow">↗</span>
       </div>
-      <div class="card-subtitle">${escapeHtml(node.subtitle)}</div>
-      <div class="card-meta">
-        <span class="card-tag">${escapeHtml(node.tag || data.badge)}</span>
-        ${subHint}
-      </div>
+      ${node.subtitle ? `<div class="card-desc">${escapeHtml(node.subtitle)}</div>` : ''}
+      ${detailText && detailText !== node.subtitle ? `<div class="card-detail">${escapeHtml(detailText)}</div>` : ''}
     `;
 
     // Sub-branch interaction on primary node hover
     card.addEventListener('mouseenter', () => {
       cancelBranchHide();
       if (node.subBranches && node.subBranches.length > 0) {
-        renderSubBranches(card, node.subBranches);
+        renderSubBranches(card, node.subBranches, key);
       } else {
         removeSubBranches();
       }
@@ -2158,7 +2365,7 @@ function renderPrimaryBranches(key, sourceElem) {
         if (!isCursorInSubBranches()) {
           removeSubBranches();
         }
-      }, 150);
+      }, 180);
     });
 
     branchNodesContainer.appendChild(card);
@@ -2166,45 +2373,49 @@ function renderPrimaryBranches(key, sourceElem) {
 }
 
 // Render secondary sub-branches (songs for playlist, commits for repo)
-function renderSubBranches(parentCardElem, subList) {
+function renderSubBranches(parentCardElem, subList, key) {
   removeSubBranches();
   activeSubBranchCard = parentCardElem;
 
   const parentRect = parentCardElem.getBoundingClientRect();
   const vw = window.innerWidth;
   const vh = window.innerHeight;
-  const spotifyCardElem = document.getElementById('spotify-card');
-  const spRect = spotifyCardElem ? spotifyCardElem.getBoundingClientRect() : null;
+  const linksGridElem = document.getElementById('links-grid');
+  const gridRect = linksGridElem ? linksGridElem.getBoundingClientRect() : null;
 
-  const sx0 = parentRect.right - 2;
-  const sy0 = parentRect.top + parentRect.height / 2;
-
-  const subCardW = 195;
-  const subCardH = 48;
+  const subCardW = 205;
+  const subCardH = 46;
   const subGap = 8;
+  const maxSubs = Math.min(subList.length, 4);
 
-  // Determine horizontal sprout direction: right or flip to left if near edge
+  // Determine sprout direction: right or flip to left if near edge
   let sproutRight = true;
-  if (sx0 + 35 + subCardW > vw - 15) {
+  if (parentRect.right + 30 + subCardW > vw - 16) {
     sproutRight = false;
   }
 
-  const subStartX = sproutRight ? (sx0 + 38) : (parentRect.left - subCardW - 38);
+  let subStartX;
+  let sx0, sy0, targetAttachX;
 
-  subList.slice(0, 5).forEach((sub, idx) => {
-    let subY = parentRect.top - 10 + idx * (subCardH + subGap);
-    if (subY + subCardH > vh - 20) {
-      subY = vh - subCardH - 20 - (subList.length - 1 - idx) * (subCardH + subGap);
-    }
-    if (subY < 20) subY = 20;
+  if (sproutRight) {
+    sx0 = parentRect.right;
+    sy0 = parentRect.top + parentRect.height / 2;
+    subStartX = sx0 + 32;
+    targetAttachX = subStartX;
+  } else {
+    sx0 = parentRect.left;
+    sy0 = parentRect.top + parentRect.height / 2;
+    subStartX = Math.max(gridRect ? gridRect.right + 20 : 20, sx0 - subCardW - 32);
+    targetAttachX = subStartX + subCardW;
+  }
 
-    // Spotify collision avoidance for sub-branches
-    if (spRect && subStartX + subCardW > spRect.left - 15 && subStartX < spRect.right + 15 &&
-        subY + subCardH > spRect.top - 15 && subY < spRect.bottom + 15) {
-      subY = spRect.bottom + 16 + idx * (subCardH + subGap);
-    }
+  let startSubY = parentRect.top - 8;
+  if (startSubY + maxSubs * (subCardH + subGap) > vh - 20) {
+    startSubY = Math.max(20, vh - 20 - maxSubs * (subCardH + subGap));
+  }
 
-    const targetAttachX = sproutRight ? subStartX : (subStartX + subCardW);
+  subList.slice(0, maxSubs).forEach((sub, idx) => {
+    const subY = startSubY + idx * (subCardH + subGap);
     const targetAttachY = subY + subCardH / 2;
 
     // Secondary curved branch line
@@ -2213,7 +2424,7 @@ function renderSubBranches(parentCardElem, subList) {
     branchTreeSvg.appendChild(subLine);
 
     // Dot at sub-attachment
-    const subDot = createBranchDot(targetAttachX, targetAttachY);
+    const subDot = createBranchDot(targetAttachX, targetAttachY, true);
     subDot.classList.add('active-sub-dot');
     branchTreeSvg.appendChild(subDot);
 
@@ -2229,10 +2440,10 @@ function renderSubBranches(parentCardElem, subList) {
 
     subCard.innerHTML = `
       <div class="sub-title">${escapeHtml(sub.title)}</div>
-      <div class="sub-artist">${escapeHtml(sub.artist || '')}</div>
+      ${sub.artist ? `<div class="sub-artist">${escapeHtml(sub.artist)}</div>` : ''}
       <div class="sub-meta">
         <span>${escapeHtml(sub.duration || '')}</span>
-        <span style="color:#dfb282;">play ↗</span>
+        <span>↗</span>
       </div>
     `;
 
@@ -2307,7 +2518,7 @@ function openMobileBranchModal(key) {
       nodeWrapper.className = 'mobile-branch-node-card';
 
       const hasSubs = node.subBranches && node.subBranches.length > 0;
-      const expandIcon = hasSubs ? `<span class="mobile-expand-indicator" style="font-size:11px;color:#dfb282;margin-left:auto;">${node.subBranches.length} items ▾</span>` : `<span style="font-size:11px;opacity:0.6;margin-left:auto;">↗</span>`;
+      const expandIcon = hasSubs ? `<span class="mobile-expand-indicator" style="font-size:11px;color:rgba(232,226,217,0.55);margin-left:auto;">${node.subBranches.length} items ▾</span>` : `<span style="font-size:11px;opacity:0.6;margin-left:auto;">↗</span>`;
 
       nodeWrapper.innerHTML = `
         <div class="mobile-node-main" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;">
@@ -2342,7 +2553,7 @@ function openMobileBranchModal(key) {
               <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#ffffff;display:block;">${escapeHtml(sub.title)}</span>
               <span style="font-size:10px;color:#8c8276;">${escapeHtml(sub.artist || '')}</span>
             </div>
-            <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#dfb282;">${escapeHtml(sub.duration || 'play ↗')}</span>
+            <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:rgba(232,226,217,0.55);">${escapeHtml(sub.duration || 'play ↗')}</span>
           `;
           subListElem.appendChild(subA);
         });
@@ -2471,13 +2682,23 @@ function initBranchTreeSystem() {
 
   // Handle window resize dynamically
   window.addEventListener('resize', () => {
+    updateBranchSvgDimensions();
     if (activeBranchKey && activeBranchSourceElem && !isMobile()) {
       renderPrimaryBranches(activeBranchKey, activeBranchSourceElem);
     }
   }, { passive: true });
 
-  // Start background live sync
-  syncLiveGitHubData();
+  // Hide branch when scrolling to prevent floating misalignment
+  const onScrollHide = () => {
+    if (activeBranchKey) {
+      hideBranchTree();
+    }
+  };
+  if (aestheticRoot) aestheticRoot.addEventListener('scroll', onScrollHide, { passive: true });
+  window.addEventListener('scroll', onScrollHide, { passive: true });
+
+  // Start background live sync across real data sources
+  syncRealDataSources();
 }
 
 // Initialize when DOM is ready

@@ -1,0 +1,78 @@
+{
+  "username": "kunal1320k",
+  "profile_url": "https://github.com/kunal1320k",
+  "repositories": [
+    {
+      "name": "SpotifytoYTMusicSync",
+      "description": "Transfer/sync Spotify playlists(public/private) to ytm. Autocreate/Manual playlists feature. Very high accuracy.",
+      "language": "Python",
+      "stars": 13,
+      "forks": 1,
+      "url": "https://github.com/kunal1320k/SpotifytoYTMusicSync"
+    },
+    {
+      "name": "ChemOCR",
+      "description": "lite model use OCR Chem Structures to different formats for further use",
+      "language": "Python",
+      "stars": 2,
+      "forks": 0,
+      "url": "https://github.com/kunal1320k/ChemOCR"
+    },
+    {
+      "name": "ExeIconChanger",
+      "description": "High-performance C++ tool to change EXE icons with smart resizing (Bicubic Interpolation) and automatic image-to-icon conversion.",
+      "language": "C++",
+      "stars": 0,
+      "forks": 0,
+      "url": "https://github.com/kunal1320k/ExeIconChanger"
+    },
+    {
+      "name": "OneClickSort",
+      "description": "Automatically Move to Files in Folders according to there file type",
+      "language": "PowerShell",
+      "stars": 0,
+      "forks": 0,
+      "url": "https://github.com/kunal1320k/OneClickSort"
+    },
+    {
+      "name": "Proxy-Switcher-Powershell",
+      "description": "This PowerShell script simplifies proxy management on Windows.",
+      "language": "PowerShell",
+      "stars": 0,
+      "forks": 0,
+      "url": "https://github.com/kunal1320k/Proxy-Switcher-Powershell"
+    },
+    {
+      "name": "basic-telegram-file-uploader",
+      "description": "Uploads the file from any particular location of your drive to telegram channel",
+      "language": "Python",
+      "stars": 0,
+      "forks": 0,
+      "url": "https://github.com/kunal1320k/basic-telegram-file-uploader"
+    },
+    {
+      "name": "myprofile",
+      "description": "halo",
+      "language": "JavaScript",
+      "stars": 0,
+      "forks": 0,
+      "url": "https://github.com/kunal1320k/myprofile"
+    },
+    {
+      "name": "omarchy-dotfiles-backup",
+      "description": "Arch Linux Dotfiles Backup",
+      "language": "QML",
+      "stars": 0,
+      "forks": 0,
+      "url": "https://github.com/kunal1320k/omarchy-dotfiles-backup"
+    },
+    {
+      "name": "LoginFormUsingKeyAuth",
+      "description": "Login form authentication sample",
+      "language": "C#",
+      "stars": 0,
+      "forks": 0,
+      "url": "https://github.com/kunal1320k/LoginFormUsingKeyAuth"
+    }
+  ]
+}
