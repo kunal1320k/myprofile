@@ -1,0 +1,7 @@
+﻿{
+  "_note": "Fallback for MyAnimeList branch tree. Live data comes from Jikan (no key needed): https://api.jikan.moe/v4/users/kunal1320k/animelist. If rate-limited, this file is used.",
+  "anime": [
+    { "id": "a1", "title": "edit me or wait for Jikan", "subtitle": "watching", "url": "https://myanimelist.net/profile/kunal1320k" },
+    { "id": "a2", "title": "your anime list", "subtitle": "auto-updates live", "url": "https://myanimelist.net/profile/kunal1320k" }
+  ]
+}

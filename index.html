@@ -10,7 +10,7 @@
   <link
     href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap"
     rel="stylesheet">
-  <link rel="stylesheet" href="index.css?v=20260816_8">
+  <link rel="stylesheet" href="index.css?v=20260906_tree">
 </head>
 
 <body class="raw">
@@ -46,6 +46,11 @@
     <div class="bg-grain"></div>
     <canvas id="tree-canvas" aria-hidden="true"></canvas>
     <canvas id="leaves-canvas"></canvas>
+    <!-- Interactive Organic Tree Branching System -->
+    <div id="branch-tree-overlay" class="branch-tree-overlay" aria-hidden="true">
+      <svg id="branch-tree-svg" class="branch-tree-svg" xmlns="http://www.w3.org/2000/svg"></svg>
+      <div id="branch-nodes-container" class="branch-nodes-container"></div>
+    </div>
     <div class="content">
       <div class="left-col">
         <div class="hero">
@@ -192,10 +197,25 @@
       </div>
     </div>
   </div>
+  <!-- Mobile Interactive Branch Modal / Drawer -->
+  <div id="mobile-branch-modal" class="mobile-branch-modal" aria-hidden="true">
+    <div class="mobile-branch-backdrop" id="mobile-branch-backdrop"></div>
+    <div class="mobile-branch-sheet">
+      <div class="mobile-branch-handle"></div>
+      <div class="mobile-branch-header">
+        <div class="mobile-branch-title-wrap">
+          <span class="mobile-branch-badge" id="mobile-branch-badge">branch</span>
+          <h3 class="mobile-branch-title" id="mobile-branch-title">GitHub</h3>
+        </div>
+        <button id="mobile-branch-close" class="mobile-branch-close" type="button" aria-label="Close branch view">✕</button>
+      </div>
+      <div class="mobile-branch-content" id="mobile-branch-content"></div>
+    </div>
+  </div>
   <div id="wave-ring"></div>
   <audio id="theme-audio" src="./hey_there_delilah.mp3" loop preload="auto"></audio>
 
-  <script src="index.js?v=20260816_7"></script>
+  <script src="index.js?v=20260906_tree"></script>
 </body>
 
 </html>

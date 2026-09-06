@@ -1,0 +1,24 @@
+﻿{
+  "_note": "EDIT ME: this is the fallback + manual source for the Spotify branch tree. If you configure the Cloudflare Worker with SPOTIFY_CLIENT_ID / SPOTIFY_CLIENT_SECRET / SPOTIFY_REFRESH_TOKEN / SPOTIFY_USER_ID, the site will auto-refresh from Spotify and new playlists appear as new branches automatically. Otherwise edit this file and push - new entries appear as new branches.",
+  "playlists": [
+    {
+      "id": "14d7SJJHjhwEerGgKaUa4J",
+      "title": "angrexxxxi",
+      "subtitle": "playlist - kunal1320k",
+      "url": "https://open.spotify.com/playlist/14d7SJJHjhwEerGgKaUa4J",
+      "songs": [
+        { "id": "s1", "title": "The Scientist", "subtitle": "Coldplay", "url": "https://open.spotify.com/search/The%20Scientist%20Coldplay" },
+        { "id": "s2", "title": "Hey There Delilah", "subtitle": "Plain White T's", "url": "https://open.spotify.com/search/Hey%20There%20Delilah" }
+      ]
+    },
+    {
+      "id": "demo-lofi",
+      "title": "lofi autumn",
+      "subtitle": "playlist - chill",
+      "url": "https://open.spotify.com/user/kunal1320k",
+      "songs": [
+        { "id": "s3", "title": "add songs here", "subtitle": "edit data/spotify.json", "url": "https://open.spotify.com/user/kunal1320k" }
+      ]
+    }
+  ]
+}

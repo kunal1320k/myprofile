@@ -1263,3 +1263,380 @@ body.aesthetic {
         padding: 20px 14px 60px
       }
     }
+
+    /* ══════════════════════════════════════════════════════════════════════════
+       INTERACTIVE ORGANIC TREE BRANCHING SYSTEM ("Where to Find Me" Cards)
+       ══════════════════════════════════════════════════════════════════════════ */
+    .branch-tree-overlay {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 15;
+      overflow: visible;
+      opacity: 0;
+      transition: opacity 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .branch-tree-overlay.active {
+      opacity: 1;
+    }
+
+    .branch-tree-svg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      overflow: visible;
+    }
+
+    /* Organic branch path */
+    .tree-branch-line {
+      fill: none;
+      stroke: rgba(255, 255, 255, 0.88);
+      stroke-width: 2.2px;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.5)) drop-shadow(0 2px 8px rgba(226, 135, 67, 0.25));
+      transition: stroke 0.2s ease;
+    }
+
+    .tree-branch-line.secondary {
+      stroke: rgba(226, 185, 140, 0.85);
+      stroke-width: 1.8px;
+      stroke-dasharray: 4 2;
+    }
+
+    .tree-branch-node-dot {
+      fill: #ffffff;
+      stroke: #e28743;
+      stroke-width: 1.5px;
+      filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.8));
+    }
+
+    .branch-nodes-container {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 16;
+      overflow: visible;
+    }
+
+    /* Branch Content Card (Box) */
+    .tree-leaf-card {
+      position: absolute;
+      pointer-events: auto;
+      min-width: 170px;
+      max-width: 260px;
+      padding: 10px 14px;
+      background: rgba(14, 11, 9, 0.92);
+      border: 1.5px solid rgba(255, 255, 255, 0.22);
+      border-radius: 8px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.75), 0 0 12px rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      color: #f5efe6;
+      text-decoration: none;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      cursor: pointer;
+      opacity: 0;
+      transform: scale(0.92) translateY(6px);
+      animation: treeNodeAppear 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+                  border-color 0.2s ease,
+                  box-shadow 0.2s ease,
+                  background 0.2s ease;
+      user-select: none;
+    }
+
+    .tree-leaf-card:hover,
+    .tree-leaf-card.expanded {
+      transform: translateY(-2px) scale(1.02);
+      border-color: rgba(255, 255, 255, 0.6);
+      background: rgba(22, 17, 14, 0.96);
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.85), 0 0 18px rgba(226, 135, 67, 0.3);
+    }
+
+    .tree-leaf-card .card-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+    }
+
+    .tree-leaf-card .card-badge {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.08);
+      color: #dfb282;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    .tree-leaf-card .card-badge.live {
+      background: rgba(29, 185, 84, 0.15);
+      color: #1ed760;
+      border-color: rgba(29, 185, 84, 0.3);
+    }
+
+    .tree-leaf-card .card-title {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 12px;
+      font-weight: 500;
+      color: #ffffff;
+      margin: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .tree-leaf-card .card-desc {
+      font-family: "Times New Roman", Times, serif;
+      font-size: 11.5px;
+      line-height: 1.35;
+      color: #a89f91;
+      margin: 0;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .tree-leaf-card .card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      margin-top: 2px;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 10px;
+      color: #8c8276;
+    }
+
+    .tree-leaf-card .card-arrow {
+      font-size: 10px;
+      color: #dfb282;
+      transition: transform 0.2s ease;
+    }
+
+    .tree-leaf-card:hover .card-arrow {
+      transform: translate(2px, -2px);
+      color: #ffffff;
+    }
+
+    /* Sub-branch Leaf Card (Songs, Details) */
+    .tree-leaf-subcard {
+      position: absolute;
+      pointer-events: auto;
+      min-width: 175px;
+      max-width: 250px;
+      padding: 8px 12px;
+      background: rgba(18, 14, 12, 0.94);
+      border: 1.2px solid rgba(226, 135, 67, 0.35);
+      border-radius: 6px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.8), 0 0 10px rgba(226, 135, 67, 0.15);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      color: #f5efe6;
+      text-decoration: none;
+      cursor: pointer;
+      opacity: 0;
+      transform: scale(0.9) translateY(4px);
+      animation: treeNodeAppear 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      transition: all 0.2s ease;
+      user-select: none;
+    }
+
+    .tree-leaf-subcard:hover {
+      transform: translateY(-2px) scale(1.03);
+      border-color: rgba(226, 135, 67, 0.7);
+      background: rgba(26, 20, 16, 0.98);
+      box-shadow: 0 10px 26px rgba(0, 0, 0, 0.9), 0 0 16px rgba(226, 135, 67, 0.35);
+    }
+
+    .tree-leaf-subcard .sub-title {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 11px;
+      font-weight: 500;
+      color: #ffffff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .tree-leaf-subcard .sub-artist {
+      font-family: "Times New Roman", Times, serif;
+      font-size: 11px;
+      color: #b5aba0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-top: 1px;
+    }
+
+    .tree-leaf-subcard .sub-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 4px;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 9.5px;
+      color: #8c8276;
+    }
+
+    /* Active indicator on hovered link row */
+    .link-row.branch-active {
+      border-color: rgba(255, 255, 255, 0.45) !important;
+      background: rgba(255, 255, 255, 0.08) !important;
+      box-shadow: 0 0 16px rgba(255, 255, 255, 0.15) !important;
+    }
+
+    @keyframes treeNodeAppear {
+      to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+      }
+    }
+
+    /* Mobile Branch Modal / Drawer */
+    .mobile-branch-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 99;
+      pointer-events: none;
+    }
+
+    .mobile-branch-modal.active {
+      display: block;
+      pointer-events: auto;
+    }
+
+    .mobile-branch-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .mobile-branch-modal.active .mobile-branch-backdrop {
+      opacity: 1;
+    }
+
+    .mobile-branch-sheet {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      max-height: 80vh;
+      background: #110e0c;
+      border-top: 1.5px solid rgba(255, 255, 255, 0.25);
+      border-radius: 20px 20px 0 0;
+      padding: 16px 20px 32px;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.9);
+      transform: translateY(100%);
+      transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .mobile-branch-modal.active .mobile-branch-sheet {
+      transform: translateY(0);
+    }
+
+    .mobile-branch-handle {
+      width: 40px;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 999px;
+      margin: 0 auto 12px;
+    }
+
+    .mobile-branch-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      margin-bottom: 14px;
+    }
+
+    .mobile-branch-title-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .mobile-branch-badge {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 10px;
+      text-transform: uppercase;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: rgba(226, 135, 67, 0.15);
+      color: #dfb282;
+      border: 1px solid rgba(226, 135, 67, 0.3);
+    }
+
+    .mobile-branch-title {
+      font-family: "Instrument Serif", serif;
+      font-size: 22px;
+      font-weight: 400;
+      color: #ffffff;
+      margin: 0;
+    }
+
+    .mobile-branch-close {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #e8e2d9;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 13px;
+    }
+
+    .mobile-branch-content {
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding-bottom: 12px;
+    }
+
+    .mobile-branch-node-card {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding: 12px 14px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      text-decoration: none;
+      color: #ffffff;
+    }
+
+    .mobile-sub-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding-left: 12px;
+      margin-top: 6px;
+      border-left: 2px solid rgba(226, 135, 67, 0.3);
+    }
