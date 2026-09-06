@@ -1565,7 +1565,7 @@ const BRANCH_DATA = {
     badge: "Music",
     icon: `<svg viewBox="0 0 24 24" width="16" height="16" fill="#1ed760"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/></svg>`,
     profileUrl: "https://open.spotify.com/user/kunal1320k",
-nodes: [
+    nodes: [
       {
         id: "sp-14d7SJJHjhwEerGgKaUa4J",
         title: "angrexxxxi 🥟",
@@ -1580,160 +1580,42 @@ nodes: [
           { title: "This Side of Paradise", artist: "Coyote Theory", duration: "4:02", url: "https://open.spotify.com/track/79EkGysjP2dL5GdpeQjRxT" },
           { title: "Pluto Projector", artist: "Rex Orange County", duration: "4:27", url: "https://open.spotify.com/track/4EWBhKf1fOFnyMtUzACXEc" },
           { title: "Fly Me to the Moon", artist: "The Macarons Project", duration: "2:35", url: "https://open.spotify.com/track/0flo3KqhjkcuoB1G6Mhq7s" },
-          { title: "Glue Song", artist: "beabadoobee", duration: "2:15", url: "https://open.spotify.com/track/3iBgrkexCzVuPy4O9vx7Mf" }
-        ]
-      },
-      {
-        id: "sp-5xoSwzGB8S1xMJXhb6PABc",
-        title: "casette",
-        subtitle: "ishita • 87 songs",
-        tag: "Playlist",
-        url: "https://open.spotify.com/playlist/5xoSwzGB8S1xMJXhb6PABc",
-        subBranches: [
-          { title: "My Own Summer (Shove It)", artist: "Deftones", duration: "3:34", url: "https://open.spotify.com/track/1158ckiB5S4cpsdYHDB9IF" },
-          { title: "Change (In the House of Flies)", artist: "Deftones", duration: "4:59", url: "https://open.spotify.com/track/51c94ac31swyDQj9B3Lzs3" },
-          { title: "Better", artist: "sign crushes motorist", duration: "1:38", url: "https://open.spotify.com/track/0Z94dtWElamDwU4NrcGoUR" },
-          { title: "Good Looking", artist: "Suki Waterhouse", duration: "3:34", url: "https://open.spotify.com/track/0j3mqDTK4Z6lvrLzFCUUz6" },
-          { title: "Passenger", artist: "Deftones", duration: "6:08", url: "https://open.spotify.com/track/7IoK6jZBxY7NMoQPoPXZCF" },
-          { title: "Entombed", artist: "Deftones", duration: "4:59", url: "https://open.spotify.com/track/4bLCPfBLKlqiONo6TALTh5" },
-          { title: "Rosemary", artist: "Deftones", duration: "6:53", url: "https://open.spotify.com/track/4FEr6dIdH6EqLKR0jB560J" },
-          { title: "Kingston", artist: "Faye Webster", duration: "3:22", url: "https://open.spotify.com/track/5WbfFTuIldjL9x7W6y5l7R" }
-        ]
-      },
-      {
-        id: "sp-6zEcBH3X2RkTtSQI4fTn8v",
-        title: "Coffeeee",
-        subtitle: "sangam_shh • 100 songs",
-        tag: "Playlist",
-        url: "https://open.spotify.com/playlist/6zEcBH3X2RkTtSQI4fTn8v",
-        subBranches: [
-          { title: "Girl in a Coffee Shop", artist: "Zach Seabaugh", duration: "2:15", url: "https://open.spotify.com/track/4t1zWwxBWH2xqpQgR6KTcq" },
-          { title: "Make You Mine", artist: "PUBLIC", duration: "3:52", url: "https://open.spotify.com/track/5iFwAOB2TFkPJk8sMlxP8g" },
-          { title: "Belong Together", artist: "Mark Ambor", duration: "2:28", url: "https://open.spotify.com/track/5uQ7de4EWjb3rkcFxyEOpu" },
-          { title: "Carry You Home", artist: "Alex Warren", duration: "2:46", url: "https://open.spotify.com/track/4uzKAj0mIyYmyhsRRyPXaQ" },
-          { title: "Those Eyes", artist: "New West", duration: "3:40", url: "https://open.spotify.com/track/50x1Ic8CaXkYNvjmxe3WXy" },
-          { title: "Let's Fall in Love for the Night", artist: "FINNEAS", duration: "3:10", url: "https://open.spotify.com/track/4pfhgOylRLcBll5JjUsJZj" },
-          { title: "The One", artist: "Kodaline", duration: "3:52", url: "https://open.spotify.com/track/0My8NPmENHrN5W7OfgZnZJ" },
-          { title: "Perfect", artist: "Ed Sheeran", duration: "4:23", url: "https://open.spotify.com/track/0tgVpDi06FyKpA1z0VMD4v" }
-        ]
-      },
-      {
-        id: "sp-4ihgqKZzcjEJ6s7RY9bSWU",
-        title: "the boy",
-        subtitle: "ishita • 51 songs",
-        tag: "Playlist",
-        url: "https://open.spotify.com/playlist/4ihgqKZzcjEJ6s7RY9bSWU",
-        subBranches: [
-          { title: "Mirrors", artist: "Justin Timberlake", duration: "8:05", url: "https://open.spotify.com/track/4rHZZAmHpZrA3iH5zx8frV" },
-          { title: "Comfortable", artist: "H.E.R.", duration: "4:15", url: "https://open.spotify.com/track/3f3cliOygeuUpGRwdohy12" },
-          { title: "melt", artist: "Kehlani", duration: "3:31", url: "https://open.spotify.com/track/1pCbBNRglGwlMLeUTOnqrO" },
-          { title: "All of Me", artist: "John Legend", duration: "4:29", url: "https://open.spotify.com/track/3U4isOIWM3VvDubwSI3y7a" },
-          { title: "yours", artist: "Greyson Chance", duration: "3:46", url: "https://open.spotify.com/track/1FHy0U8vbNRJY6t9sk4rC2" },
-          { title: "Tum Se Hi", artist: "Pritam, Mohit Chauhan, Irshad Kamil", duration: "5:21", url: "https://open.spotify.com/track/7eQl3Yqv35ioqUfveKHitE" },
-          { title: "Liz On Top Of The World - From \"Pride & Prejudice\" Soundtrack", artist: "Dario Marianelli, Jean-Yves Thibaudet", duration: "1:22", url: "https://open.spotify.com/track/1nd0AX0VYGQb2pF442YqGj" },
-          { title: "Je te laisserai des mots", artist: "Patrick Watson", duration: "2:40", url: "https://open.spotify.com/track/0V5cvmTKsYmF5FmGGEAfmS" }
-        ]
-      },
-      {
-        id: "sp-4WshYPCsLOlWNioo28hFsr",
-        title: "in your head",
-        subtitle: "ishita • 42 songs",
-        tag: "Playlist",
-        url: "https://open.spotify.com/playlist/4WshYPCsLOlWNioo28hFsr",
-        subBranches: [
-          { title: "in your head", artist: "cloudyfield", duration: "2:50", url: "https://open.spotify.com/track/4o6xvp0vmdHMeS4Z5qeRQw" },
-          { title: "My Girlfriend's Girlfriend", artist: "Type O Negative", duration: "3:48", url: "https://open.spotify.com/track/3yubyWatnRRLHkIsN1ZI2Q" },
-          { title: "Bardo", artist: "trauma ray", duration: "3:24", url: "https://open.spotify.com/track/05eBPrTZPj0i0p9xsIlNPI" },
-          { title: "Pandora", artist: "Wisp", duration: "4:21", url: "https://open.spotify.com/track/3SBhQh5X7tO8ejCMUdjSRu" },
-          { title: "Your face", artist: "Wisp", duration: "3:47", url: "https://open.spotify.com/track/7ne2hzW4jaU5tacaCI4kJH" },
-          { title: "Anesthesia", artist: "Type O Negative", duration: "6:41", url: "https://open.spotify.com/track/0c03LEUpwW0O2tmt0dfktG" },
-          { title: "Be My Druidess", artist: "Type O Negative", duration: "5:25", url: "https://open.spotify.com/track/1ycz5DvATLtmn2pOU8u38C" },
-          { title: "Garden", artist: "Pearl Jam", duration: "4:58", url: "https://open.spotify.com/track/3KcJEOyaLDLAERlOCBhmPA" }
-        ]
-      },
-      {
-        id: "sp-478BJCqpYQbRiykf7Eiyy3",
-        title: "Himachal 💗",
-        subtitle: "sangam_shh • 39 songs",
-        tag: "Playlist",
-        url: "https://open.spotify.com/playlist/478BJCqpYQbRiykf7Eiyy3",
-        subBranches: [
-          { title: "Amma Puchhdi Sun Dhiye Meriye", artist: "Karnail Rana", duration: "9:04", url: "https://open.spotify.com/track/1nyKQwj2C1wIsQlssBwUng" },
-          { title: "Chaska", artist: "Ajay Chauhan, Ajju Tomar", duration: "9:43", url: "https://open.spotify.com/track/2woe0OybftJUafAzk88p8b" },
-          { title: "Rumatiye", artist: "Nati King Kuldeep Sharma", duration: "2:54", url: "https://open.spotify.com/track/1r7tlzmNtSp5YuvXzUM9Uk" },
-          { title: "Dunge Naluye", artist: "Vicky Rajta", duration: "4:22", url: "https://open.spotify.com/track/0BlvgAcS6k9EoBeKhJorNX" },
-          { title: "Rohru Jana DJ Nonstop Album", artist: "Nati King Kuldeep Sharma", duration: "21:33", url: "https://open.spotify.com/track/2sp2HiujUohPImG787Nu9e" },
-          { title: "Nati Sirmour Waliye", artist: "Ajay Chauhan", duration: "4:53", url: "https://open.spotify.com/track/4rbv9ZnArAo9CHiw1igyDK" },
-          { title: "Kunjoo Chanchalo", artist: "Karnail Rana, Anuradha Paudwal", duration: "9:15", url: "https://open.spotify.com/track/0VsDpce4sz4YeoTq6ISD0J" },
-          { title: "Bangdiyan", artist: "Sunil Mastie, Sheetal Arora", duration: "4:21", url: "https://open.spotify.com/track/2CwQKr68yEwCCqPA1lrC8d" }
-        ]
-      },
-      {
-        id: "sp-0dTWmjqu1I9Wy8amnyCUPJ",
-        title: "distortion",
-        subtitle: "ishita • 37 songs",
-        tag: "Playlist",
-        url: "https://open.spotify.com/playlist/0dTWmjqu1I9Wy8amnyCUPJ",
-        subBranches: [
-          { title: "Rummage (feat. Orbiting Human Circus)", artist: "quannnic, Orbiting Human Circus", duration: "3:50", url: "https://open.spotify.com/track/5VTggg4KikE3rBmKHD3i7t" },
-          { title: "Enough for you", artist: "Wisp", duration: "3:05", url: "https://open.spotify.com/track/7CYPzawmBUJUN3tDGhQh1I" },
-          { title: "Figure It Out", artist: "Royal Blood", duration: "3:03", url: "https://open.spotify.com/track/3MjrueDQKVr6xDDseZwhEd" },
-          { title: "Chasing Light", artist: "aswekeepsearching", duration: "5:31", url: "https://open.spotify.com/track/5F0hIO08012qttN94QlO7k" },
-          { title: "Toofaan", artist: "Karakoram", duration: "3:52", url: "https://open.spotify.com/track/2Xf7blEC0JC3DYeIvy011j" },
-          { title: "life imitates life", artist: "quannnic", duration: "3:23", url: "https://open.spotify.com/track/5E9qBEUja2yAjUPhQO8Gx7" },
-          { title: "Safe In Your Skin", artist: "Title Fight", duration: "2:34", url: "https://open.spotify.com/track/1acjIzGS1YUrx6nSuktnqU" },
-          { title: "Downer", artist: "Nirvana", duration: "1:43", url: "https://open.spotify.com/track/4e0MJaiXSwXBhrQZHyoK8c" }
-        ]
-      },
-      {
-        id: "sp-6SJEodCZUtpAFFrRGtXz2M",
-        title: "right in the feels",
-        subtitle: "ishita • 26 songs",
-        tag: "Playlist",
-        url: "https://open.spotify.com/playlist/6SJEodCZUtpAFFrRGtXz2M",
-        subBranches: [
-          { title: "Liar", artist: "Paramore", duration: "4:21", url: "https://open.spotify.com/track/7EUhSxz4srS8pqh1cENbLB" },
-          { title: "Sextape", artist: "Deftones", duration: "4:01", url: "https://open.spotify.com/track/1EryAkZ0VHstC6haIxVBiE" },
-          { title: "Show Me How", artist: "Men I Trust", duration: "3:35", url: "https://open.spotify.com/track/01TyFEZu6mHbffsVfxgrFn" },
-          { title: "Scenery", artist: "Ashmute", duration: "4:34", url: "https://open.spotify.com/track/1PztXsxTLZE7rFNP0kUwgQ" },
-          { title: "Aaftaab", artist: "The Local Train", duration: "3:53", url: "https://open.spotify.com/track/4LtSTc3xANVhYeeN69nscM" },
-          { title: "Clair de lune", artist: "Claude Debussy, Alexis Weissenberg", duration: "5:47", url: "https://open.spotify.com/track/6kf7ZCJjEbjZXikivKOsvJ" },
-          { title: "Gymnopédie No. 1", artist: "Erik Satie, Philippe Entremont", duration: "3:25", url: "https://open.spotify.com/track/5NGtFXVpXSvwunEIGeviY3" },
-          { title: "Astronomy", artist: "Conan Gray", duration: "4:03", url: "https://open.spotify.com/track/0KmgJyW4GDgonqsoyx0CZ3" }
+          { title: "Glue Song", artist: "beabadoobee", duration: "2:15", url: "https://open.spotify.com/track/3iBgrkexCzVuPy4O9vx7Mf" },
+          { title: "Atlantis", artist: "Seafret", duration: "3:49", url: "https://open.spotify.com/track/1Fid2jjqsHViMX6xNH70hE" },
+          { title: "Heather", artist: "Conan Gray", duration: "3:18", url: "https://open.spotify.com/track/4xqrdfXkTW4T0RauPLv3WA" },
+          { title: "Young Girl A", artist: "Siinamota", duration: "3:41", url: "https://open.spotify.com/track/5sPKAEb7afrIMtdqEnI6H6" },
+          { title: "Line Without a Hook", artist: "Ricky Montgomery", duration: "4:09", url: "https://open.spotify.com/track/5NvOZCjZaGGGL597exlQWv" }
         ]
       },
       {
         id: "sp-1gHCUJSMJrMT4pClvoFcoV",
-        title: "Unheard ",
+        title: "Unheard",
         subtitle: "kunal1320k • 10 songs",
         tag: "Playlist",
         url: "https://open.spotify.com/playlist/1gHCUJSMJrMT4pClvoFcoV",
         subBranches: [
           { title: "Don't You Want Me", artist: "The Human League", duration: "3:56", url: "https://open.spotify.com/track/3L7RtEcu1Hw3OXrpnthngx" },
-          { title: "I Wanna Dance with Somebody (Who Loves Me)", artist: "Whitney Houston", duration: "4:52", url: "https://open.spotify.com/track/2tUBqZG2AbRi7Q0BIrVrEj" },
+          { title: "I Wanna Dance with Somebody", artist: "Whitney Houston", duration: "4:52", url: "https://open.spotify.com/track/2tUBqZG2AbRi7Q0BIrVrEj" },
           { title: "Scar Tissue", artist: "Red Hot Chili Peppers", duration: "3:35", url: "https://open.spotify.com/track/1G391cbiT3v3Cywg8T7DM1" },
           { title: "Come Back to Me", artist: "David Cook", duration: "4:08", url: "https://open.spotify.com/track/55r33uTqnLglVMHb1qeWOd" },
           { title: "Always Be My Baby", artist: "Mariah Carey", duration: "4:18", url: "https://open.spotify.com/track/2aBxt229cbLDOvtL7Xbb9x" },
           { title: "Dekho Na", artist: "Sobit Tamang", duration: "3:47", url: "https://open.spotify.com/track/1tBFMrlbCnJIglzG9xroRp" },
           { title: "Magnolia", artist: "Magnolia Celebration", duration: "4:16", url: "https://open.spotify.com/track/3JkDuxcnIzBUngCk6peKZi" },
-          { title: "Like You (feat. Ciara)", artist: "Bow Wow, Ciara", duration: "3:25", url: "https://open.spotify.com/track/3jEqrIfwKO0M8ALu3TGilF" }
+          { title: "Like You (feat. Ciara)", artist: "Bow Wow, Ciara", duration: "3:25", url: "https://open.spotify.com/track/3jEqrIfwKO0M8ALu3TGilF" },
+          { title: "Kiss Me", artist: "Sixpence None The Richer", duration: "3:28", url: "https://open.spotify.com/track/754kgU5rWscRTfvlsuEwFp" },
+          { title: "Heaven", artist: "Bryan Adams", duration: "4:03", url: "https://open.spotify.com/track/7Ewz6bJ97vUqk5HdkvguFQ" }
         ]
       },
       {
-        id: "sp-5rH0myoXIqZvoVLXJeliCL",
-        title: "for headbanging",
-        subtitle: "ishita • 41 songs",
-        tag: "Playlist",
-        url: "https://open.spotify.com/playlist/5rH0myoXIqZvoVLXJeliCL",
+        id: "sp-profile",
+        title: "Spotify Profile",
+        subtitle: "kunal1320k • View on Spotify",
+        tag: "Profile",
+        url: "https://open.spotify.com/user/kunal1320k",
         subBranches: [
-          { title: "KOOL KIDS", artist: "Måneskin", duration: "2:43", url: "https://open.spotify.com/track/2psPo5syHobyRjH1shxFsf" },
-          { title: "IN NOME DEL PADRE", artist: "Måneskin", duration: "3:39", url: "https://open.spotify.com/track/2uKWInHih8UkVBwgH6zuUm" },
-          { title: "LIVIDI SUI GOMITI", artist: "Måneskin", duration: "2:45", url: "https://open.spotify.com/track/1ITV1k9laGrWUpagayejMQ" },
-          { title: "LA FINE", artist: "Måneskin", duration: "3:20", url: "https://open.spotify.com/track/6DPE8tGV9lzKALNnvuY9dS" },
-          { title: "Figure It Out", artist: "Royal Blood", duration: "3:03", url: "https://open.spotify.com/track/3MjrueDQKVr6xDDseZwhEd" },
-          { title: "ZITTI E BUONI", artist: "Måneskin", duration: "3:14", url: "https://open.spotify.com/track/776AftMmFFAWUIEAb3lHhw" },
-          { title: "Mystify", artist: "INXS", duration: "3:16", url: "https://open.spotify.com/track/7LV9R3L1YfTSoefglhUyPD" },
-          { title: "Break Stuff", artist: "Limp Bizkit", duration: "2:46", url: "https://open.spotify.com/track/5cZqsjVs6MevCnAkasbEOX" }
+          { title: "angrexxxxi 🥟", artist: "100 songs • kunal1320k", duration: "Open ↗", url: "https://open.spotify.com/playlist/14d7SJJHjhwEerGgKaUa4J" },
+          { title: "Unheard", artist: "10 songs • kunal1320k", duration: "Open ↗", url: "https://open.spotify.com/playlist/1gHCUJSMJrMT4pClvoFcoV" },
+          { title: "kunal1320k Profile", artist: "Spotify Web Player", duration: "Profile ↗", url: "https://open.spotify.com/user/kunal1320k" }
         ]
       }
     ]
@@ -2025,7 +1907,7 @@ async function syncRealDataSources() {
         BRANCH_DATA.spotify.nodes = spJson.playlists.map(p => ({
           id: `sp-${p.id}`,
           title: p.title,
-          subtitle: p.subtitle,
+          subtitle: `kunal1320k • ${p.trackCount || (p.songs ? p.songs.length : 0)} songs`,
           tag: "Playlist",
           url: p.url,
           subBranches: (p.songs || []).map(s => ({
@@ -2035,6 +1917,18 @@ async function syncRealDataSources() {
             url: s.url
           }))
         }));
+        BRANCH_DATA.spotify.nodes.push({
+          id: "sp-profile",
+          title: "Spotify Profile",
+          subtitle: "kunal1320k • View on Spotify",
+          tag: "Profile",
+          url: "https://open.spotify.com/user/kunal1320k",
+          subBranches: [
+            { title: "angrexxxxi 🥟", artist: "100 songs • kunal1320k", duration: "Open ↗", url: "https://open.spotify.com/playlist/14d7SJJHjhwEerGgKaUa4J" },
+            { title: "Unheard", artist: "10 songs • kunal1320k", duration: "Open ↗", url: "https://open.spotify.com/playlist/1gHCUJSMJrMT4pClvoFcoV" },
+            { title: "kunal1320k Profile", artist: "Spotify Web Player", duration: "Profile ↗", url: "https://open.spotify.com/user/kunal1320k" }
+          ]
+        });
       }
     }
   } catch (_) {}
