@@ -709,9 +709,16 @@ body.aesthetic {
       flex-wrap: wrap;
       border-top: 1px solid rgba(255, 255, 255, 0.06);
       padding-top: 10px;
+      position: relative;
     }
 
-    .action-buttons-left,
+    .action-buttons-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
     .action-buttons-right {
       display: flex;
       align-items: center;
@@ -733,7 +740,7 @@ body.aesthetic {
       display: inline-flex;
       align-items: center;
       text-decoration: none;
-      transition: all 0.2s ease;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
       touch-action: manipulation;
       user-select: none;
     }
@@ -749,6 +756,15 @@ body.aesthetic {
       transform: scale(0.97);
     }
 
+    /* Primary Pill Buttons (Spotify + Lyrics) */
+    .spotify-btn.primary-pill {
+      padding: 6px 14px;
+      font-size: 10.5px;
+      font-weight: 500;
+      border-radius: 999px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+    }
+
     .spotify-btn.action-link {
       background: rgba(29, 185, 84, 0.15);
       border-color: rgba(29, 185, 84, 0.35);
@@ -759,6 +775,7 @@ body.aesthetic {
       background: rgba(29, 185, 84, 0.25);
       border-color: rgba(29, 185, 84, 0.6);
       color: #fff;
+      box-shadow: 0 2px 10px rgba(29, 185, 84, 0.2);
     }
 
     .spotify-btn.secondary-btn {
@@ -771,6 +788,86 @@ body.aesthetic {
       background: rgba(226, 135, 67, 0.18);
       border-color: rgba(226, 135, 67, 0.4);
       color: #fff;
+      box-shadow: 0 2px 10px rgba(226, 135, 67, 0.18);
+    }
+
+    /* Compact Icon-Only Auxiliary Buttons (YT Music, YouTube, Playlist, Mute, Sync) */
+    .spotify-btn.icon-only {
+      width: 28px;
+      height: 28px;
+      padding: 0 !important;
+      border-radius: 50% !important;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: #a89f91;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .spotify-btn.icon-only .btn-text {
+      display: none !important;
+    }
+
+    .spotify-btn.icon-only svg {
+      margin: 0 !important;
+    }
+
+    .spotify-btn.icon-only:hover {
+      background: rgba(255, 255, 255, 0.14);
+      border-color: rgba(255, 255, 255, 0.3);
+      color: #fff;
+      transform: translateY(-1px) scale(1.08);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+    }
+
+    .spotify-btn.icon-only.ytm-btn:hover,
+    .spotify-btn.icon-only.yt-video-btn:hover {
+      background: rgba(255, 0, 51, 0.18);
+      border-color: rgba(255, 0, 51, 0.45);
+      color: #ff4444;
+      box-shadow: 0 2px 8px rgba(255, 0, 51, 0.25);
+    }
+
+    .spotify-btn.icon-only.secondary-btn:hover {
+      background: rgba(226, 135, 67, 0.2);
+      border-color: rgba(226, 135, 67, 0.45);
+      color: #e28743;
+      box-shadow: 0 2px 8px rgba(226, 135, 67, 0.22);
+    }
+
+    #shuffle-btn.icon-only:hover {
+      background: rgba(29, 185, 84, 0.18);
+      border-color: rgba(29, 185, 84, 0.45);
+      color: #1ed760;
+      box-shadow: 0 2px 8px rgba(29, 185, 84, 0.22);
+    }
+
+    /* Hover group: hidden on desktop until card/controls hovered */
+    @media (hover: hover) and (pointer: fine) {
+      .hover-icons-group {
+        opacity: 0;
+        transform: translateY(2px);
+        pointer-events: none;
+        transition: opacity 0.22s cubic-bezier(0.16, 1, 0.3, 1), transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+
+      .spotify-card:hover .hover-icons-group,
+      .spotify-card:focus-within .hover-icons-group,
+      .hover-icons-group:hover {
+        opacity: 1;
+        transform: translateY(0);
+        pointer-events: auto;
+      }
+    }
+
+    /* Touch/mobile fallback: keep visible */
+    @media (hover: none), (max-width: 640px) {
+      .hover-icons-group {
+        opacity: 0.85;
+        transform: none;
+        pointer-events: auto;
+      }
     }
 
     /* SWITCHABLE MEDIA ACCORDION PANEL (Lyrics / YouTube Stream / Playlist Embed) */
