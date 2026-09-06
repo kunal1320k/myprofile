@@ -149,40 +149,42 @@ body.aesthetic {
     }
 
     .leaf-hint-1 {
-      width: 42px;
-      left: -14px;
-      top: -16px;
-      --r: -18deg;
-      transform: rotate(var(--r))
+      width: 44px;
+      left: -16px;
+      top: -18px;
+      --r: -22deg;
+      transform: rotate(var(--r));
+      z-index: 1;
     }
 
     .leaf-hint-2 {
-      width: 36px;
-      left: 18px;
-      top: -10px;
-      --r: 12deg;
+      width: 38px;
+      left: 22px;
+      top: -18px;
+      --r: 10deg;
       transform: rotate(var(--r));
-      z-index: 1
+      z-index: 1;
     }
 
     .leaf-hint-3 {
-      width: 34px;
-      left: 44px;
-      top: 4px;
-      --r: -6deg;
-      transform: rotate(var(--r)) scaleX(-1)
+      width: 40px;
+      left: 58px;
+      top: -10px;
+      --r: 32deg;
+      transform: rotate(var(--r));
+      z-index: 1;
     }
 
     .drop-wrap:hover .leaf-hint-1 {
-      transform: translateY(-3px) rotate(-22deg) scale(1.03)
+      transform: translateY(-4px) rotate(-26deg) scale(1.05);
     }
 
     .drop-wrap:hover .leaf-hint-2 {
-      transform: translateY(-5px) rotate(16deg) scale(1.05)
+      transform: translateY(-5px) rotate(14deg) scale(1.06);
     }
 
     .drop-wrap:hover .leaf-hint-3 {
-      transform: translateY(-2px) rotate(-10deg) scaleX(-1) scale(1.02)
+      transform: translateY(-3px) rotate(36deg) scale(1.05);
     }
 
     #drop {
