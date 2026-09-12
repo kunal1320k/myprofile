@@ -220,15 +220,12 @@ body.aesthetic {
   position: fixed;
   inset: 0;
   z-index: 20;
-  overflow-y: auto;
-  overflow-x: hidden;
-  -webkit-overflow-scrolling: touch;
+  overflow: hidden;
   background: #000000;
   clip-path: circle(0px at var(--cx) var(--cy));
   -webkit-clip-path: circle(0px at var(--cx) var(--cy));
   will-change: clip-path;
   display: block;
-  overscroll-behavior: contain;
   transform: translateZ(0);
 }
 
@@ -238,12 +235,24 @@ body.aesthetic {
   position: fixed !important;
   inset: 0 !important;
   width: 100% !important;
-  height: 100vh !important;
-  height: 100dvh !important;
-  overflow-y: auto !important;
-  overflow-x: hidden !important;
+  height: 100% !important;
+  overflow: hidden !important;
   will-change: auto !important;
   transform: none !important;
+}
+
+/* Dedicated smooth scroll container for foreground content - guarantees background and tree canvases remain completely fixed and still on mobile */
+.content-scroll-wrap {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+  touch-action: pan-y !important;
+  z-index: 10;
 }
 
     .bg-layer {
@@ -255,8 +264,10 @@ body.aesthetic {
     }
 
     .bg-grain {
-      position: fixed;
+      position: absolute;
       inset: 0;
+      width: 100%;
+      height: 100%;
       z-index: 1;
       opacity: .055;
       pointer-events: none;
@@ -265,19 +276,16 @@ body.aesthetic {
 
     #tree-canvas,
     #leaves-canvas {
-      position: fixed !important;
+      position: absolute !important;
       inset: 0 !important;
       top: 0 !important;
       left: 0 !important;
-      width: 100vw !important;
-      height: 100vh !important;
-      height: 100dvh !important;
+      width: 100% !important;
+      height: 100% !important;
       pointer-events: none !important;
       contain: layout paint;
       opacity: 0;
       transition: opacity 0.6s ease;
-      transform: translate3d(0, 0, 0);
-      -webkit-transform: translate3d(0, 0, 0);
     }
 
 #tree-canvas {
@@ -374,6 +382,8 @@ body.aesthetic {
       border-radius: 12px;
       text-decoration: none;
       color: #e8e2d9;
+      position: relative;
+      z-index: 10;
       transition: all .25s cubic-bezier(.22, 1, .36, 1);
       min-width: 0;
     }
@@ -381,7 +391,7 @@ body.aesthetic {
     .link-row:hover {
       transform: translateY(-1px);
       background: rgba(255, 255, 255, .05);
-      border-color: rgba(255, 255, 255, .15)
+      border-color: rgba(255, 255, 255, .2);
     }
 
     .link-row .name {
@@ -529,6 +539,7 @@ body.aesthetic {
       overflow: hidden;
       box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
       background: #111;
+      cursor: pointer;
     }
 
     .track-art {
@@ -536,12 +547,57 @@ body.aesthetic {
       height: 100%;
       object-fit: cover;
       display: block;
-      transition: transform 0.4s ease;
+      transition: transform 0.4s ease, border-radius 0.4s ease;
+    }
+
+    .album-art-wrap.is-playing .track-art {
+      border-radius: 50%;
+      animation: vinylSpin 16s linear infinite;
+    }
+
+    @keyframes vinylSpin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
     }
 
     .spotify-card:hover .track-art {
       transform: scale(1.04);
     }
+
+    .album-art-wrap.is-playing:hover .track-art {
+      transform: scale(1.04) rotate(0deg);
+    }
+
+    /* Album Art Play/Pause Overlay */
+    .album-art-play-btn {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.45);
+      border: none;
+      color: #1ed760;
+      cursor: pointer;
+      opacity: 0;
+      transition: opacity 0.22s ease, transform 0.2s ease, background 0.2s ease;
+      backdrop-filter: blur(2px);
+      -webkit-backdrop-filter: blur(2px);
+      z-index: 4;
+      padding: 0;
+    }
+
+    .album-art-wrap:hover .album-art-play-btn,
+    .album-art-play-btn:focus-visible {
+      opacity: 1;
+    }
+
+    .album-art-play-btn:hover {
+      background: rgba(0, 0, 0, 0.65);
+      color: #fff;
+      transform: scale(1.06);
+    }
+
 
     .track-details {
       flex: 1;
@@ -904,7 +960,12 @@ body.aesthetic {
     }
 
     .media-view.hidden {
-      display: none !important;
+      position: absolute !important;
+      opacity: 0 !important;
+      pointer-events: none !important;
+      height: 0 !important;
+      overflow: hidden !important;
+      visibility: hidden !important;
     }
 
     .lyrics-top-bar {
@@ -1134,13 +1195,23 @@ body.aesthetic {
       color: #fff;
     }
 
-    #spotify-frame {
+    #spotify-embed-slot {
       width: 100%;
       height: 152px;
-      border: 0;
       border-radius: 10px;
+      overflow: hidden;
+    }
+
+    #spotify-frame,
+    #spotify-embed-slot iframe,
+    .media-view iframe {
+      width: 100% !important;
+      height: 152px !important;
+      border: 0 !important;
+      border-radius: 10px !important;
       opacity: .95;
       background: #121210;
+      display: block;
     }
 
     /* MOBILE FIXES - nothing hides */
@@ -1241,15 +1312,14 @@ body.aesthetic {
       }
 
       .bg-layer, .bg-grain, #tree-canvas, #leaves-canvas {
-        position: fixed !important;
+        position: absolute !important;
         inset: 0 !important;
         top: 0 !important;
         left: 0 !important;
         right: 0 !important;
         bottom: 0 !important;
-        width: 100vw !important;
-        height: 100vh !important;
-        height: 100dvh !important;
+        width: 100% !important;
+        height: 100% !important;
         pointer-events: none !important;
       }
     }
@@ -1293,36 +1363,75 @@ body.aesthetic {
       overflow: visible;
     }
 
-    /* Organic branch path - Clean, sharp white connecting lines without blurry glow */
+    /* Organic branch path - Refined semi-transparent white tailored to the dark autumn background */
     .tree-branch-line {
       fill: none !important;
-      stroke: rgba(255, 255, 255, 0.85) !important;
-      stroke-width: 1.8px !important;
+      stroke: rgba(255, 255, 255, 0.40) !important;
+      stroke-width: 1.5px !important;
       stroke-linecap: round !important;
       stroke-linejoin: round !important;
-      filter: none !important;
-      transition: stroke 0.2s ease;
+      filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.15)) !important;
+      transition: stroke 0.25s ease, filter 0.25s ease, stroke-width 0.25s ease;
       pointer-events: none;
     }
 
+    .tree-branch-line:hover,
+    .tree-branch-line.active {
+      stroke: rgba(255, 255, 255, 0.9) !important;
+      stroke-width: 1.85px !important;
+      filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.45)) !important;
+    }
+
     .tree-branch-line.secondary {
-      stroke: rgba(255, 255, 255, 0.5) !important;
-      stroke-width: 1.4px !important;
+      stroke: rgba(255, 255, 255, 0.24) !important;
+      stroke-width: 1.2px !important;
       stroke-dasharray: 4 3 !important;
       filter: none !important;
     }
 
+    .tree-branch-line.secondary.active {
+      stroke: rgba(255, 255, 255, 0.75) !important;
+      stroke-width: 1.4px !important;
+      filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.3)) !important;
+    }
+
+    /* Ring-style node endpoints matching circular nodes in reference image */
     .tree-branch-node-dot {
-      fill: #ffffff !important;
-      stroke: none !important;
-      filter: none !important;
+      fill: rgba(14, 13, 11, 0.92) !important;
+      stroke: rgba(255, 255, 255, 0.65) !important;
+      stroke-width: 1.5px !important;
+      filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.2)) !important;
       pointer-events: none;
+      transition: all 0.2s ease;
+    }
+
+    .tree-branch-node-dot.origin {
+      fill: #ffffff !important;
+      stroke: rgba(255, 255, 255, 0.35) !important;
+      stroke-width: 3px !important;
     }
 
     .tree-branch-node-dot.secondary {
-      fill: rgba(232, 226, 217, 0.8) !important;
-      stroke: none !important;
+      fill: rgba(14, 13, 11, 0.9) !important;
+      stroke: rgba(255, 255, 255, 0.45) !important;
+      stroke-width: 1.2px !important;
       filter: none !important;
+    }
+
+    .tree-branch-node-dot.active {
+      fill: #ffffff !important;
+      stroke: rgba(255, 255, 255, 0.8) !important;
+      stroke-width: 2px !important;
+      filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.5)) !important;
+    }
+
+    /* Subtle background orbital guide arc framing node clusters */
+    .tree-branch-orbital-arc {
+      fill: none !important;
+      stroke: rgba(255, 255, 255, 0.08) !important;
+      stroke-width: 1px !important;
+      stroke-dasharray: 2 4 !important;
+      pointer-events: none;
     }
 
     .branch-nodes-container {
@@ -1335,7 +1444,7 @@ body.aesthetic {
       overflow: visible;
     }
 
-    /* Branch Content Card (Box) - Styled seamlessly with site palette */
+    /* Branch Content Card (Box) - Transparent and identical to parent link card */
     .tree-leaf-card {
       position: absolute;
       pointer-events: auto;
@@ -1343,13 +1452,11 @@ body.aesthetic {
       min-width: 250px;
       max-width: 250px;
       box-sizing: border-box;
-      padding: 11px 14px;
-      background: rgba(14, 13, 11, 0.95);
-      border: 1px solid rgba(255, 255, 255, 0.12);
+      padding: 12px 16px;
+      background: transparent;
+      border: 1px solid rgba(255, 255, 255, 0.08);
       border-radius: 12px;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.7);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
+      box-shadow: none;
       color: #e8e2d9;
       text-decoration: none;
       display: flex;
@@ -1357,8 +1464,8 @@ body.aesthetic {
       gap: 3px;
       cursor: pointer;
       opacity: 0;
-      transform: scale(0.94) translateY(4px);
-      animation: treeNodeAppear 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      transform: scale(0.96) translateY(4px);
+      animation: treeNodeAppear 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
       transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
                   border-color 0.2s ease,
                   background 0.2s ease;
@@ -1367,9 +1474,10 @@ body.aesthetic {
 
     .tree-leaf-card:hover,
     .tree-leaf-card.expanded {
-      transform: translateY(-2px);
-      border-color: rgba(255, 255, 255, 0.35);
-      background: rgba(22, 20, 18, 0.98);
+      transform: translateY(-1px);
+      border-color: rgba(255, 255, 255, 0.2);
+      background: rgba(255, 255, 255, 0.05);
+      box-shadow: none;
     }
 
     .tree-leaf-card .card-head {
@@ -1381,14 +1489,14 @@ body.aesthetic {
 
     .tree-leaf-card .card-title {
       font-family: "JetBrains Mono", monospace;
-      font-size: 12.5px;
+      font-size: 13px;
       font-weight: 500;
-      color: #ffffff;
+      color: #e8e2d9;
       margin: 0;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      letter-spacing: 0.02em;
+      letter-spacing: 0.03em;
     }
 
     .tree-leaf-card .card-desc {
@@ -1404,7 +1512,7 @@ body.aesthetic {
 
     .tree-leaf-card .card-detail {
       font-family: "JetBrains Mono", monospace;
-      font-size: 10px;
+      font-size: 10.5px;
       color: rgba(232, 226, 217, 0.45);
       margin-top: 2px;
       white-space: nowrap;
@@ -1414,16 +1522,16 @@ body.aesthetic {
     }
 
     .tree-leaf-card .card-arrow {
-      font-size: 10.5px;
+      font-size: 11px;
       color: #e8e2d9;
-      opacity: 0.35;
+      opacity: 0.3;
       transition: transform 0.2s ease, opacity 0.2s ease;
       flex-shrink: 0;
     }
 
     .tree-leaf-card:hover .card-arrow {
-      transform: translate(2px, -2px);
-      opacity: 0.85;
+      transform: translate(1px, -1px);
+      opacity: 0.7;
       color: #ffffff;
     }
 
@@ -1433,34 +1541,33 @@ body.aesthetic {
       pointer-events: auto;
       min-width: 190px;
       max-width: 240px;
-      padding: 8px 12px;
-      background: rgba(14, 13, 11, 0.95);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 8px;
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.7);
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
+      padding: 9px 13px;
+      background: transparent;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 10px;
+      box-shadow: none;
       color: #e8e2d9;
       text-decoration: none;
       cursor: pointer;
       opacity: 0;
-      transform: scale(0.94) translateY(4px);
-      animation: treeNodeAppear 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      transform: scale(0.96) translateY(4px);
+      animation: treeNodeAppear 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
       transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
       user-select: none;
     }
 
     .tree-leaf-subcard:hover {
-      transform: translateY(-2px);
-      border-color: rgba(255, 255, 255, 0.3);
-      background: rgba(22, 20, 18, 0.98);
+      transform: translateY(-1px);
+      border-color: rgba(255, 255, 255, 0.2);
+      background: rgba(255, 255, 255, 0.05);
+      box-shadow: none;
     }
 
     .tree-leaf-subcard .sub-title {
       font-family: "JetBrains Mono", monospace;
-      font-size: 11px;
+      font-size: 11.5px;
       font-weight: 500;
-      color: #ffffff;
+      color: #e8e2d9;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -1488,8 +1595,9 @@ body.aesthetic {
 
     /* Active indicator on hovered link row */
     .link-row.branch-active {
-      border-color: rgba(255, 255, 255, 0.4) !important;
-      background: rgba(255, 255, 255, 0.08) !important;
+      border-color: rgba(255, 255, 255, 0.25) !important;
+      background: rgba(255, 255, 255, 0.05) !important;
+      box-shadow: none !important;
     }
 
     @keyframes treeBranchGrow {
@@ -1628,11 +1736,17 @@ body.aesthetic {
       flex-direction: column;
       gap: 6px;
       padding: 12px 14px;
-      background: rgba(255, 255, 255, 0.04);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 10px;
+      background: transparent;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
       text-decoration: none;
       color: #ffffff;
+      transition: background 0.2s ease, border-color 0.2s ease;
+    }
+
+    .mobile-branch-node-card:hover {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: rgba(255, 255, 255, 0.2);
     }
 
     .mobile-sub-list {

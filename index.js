@@ -70,6 +70,8 @@ const embedView = document.getElementById('embed-view');
 const lyricsScroll = document.getElementById('lyrics-scroll');
 const lyricsStatusBadge = document.getElementById('lyrics-status-badge');
 const rawSpotifyText = document.getElementById('raw-spotify-text');
+const albumArtWrap = document.getElementById('album-art-wrap');
+const upperPlayBtn = document.getElementById('upper-play-btn');
 
 let revealed = false;
 let isMuted = false;
@@ -153,13 +155,12 @@ function resizeCanvas() {
   const newW = innerWidth;
   let newH = innerHeight;
   if (newW < 768) {
-    if (window.screen && window.screen.height && window.screen.width) {
-      newH = innerHeight > innerWidth
-        ? Math.max(window.screen.width, window.screen.height)
-        : Math.min(window.screen.width, window.screen.height);
-    } else {
-      newH = Math.max(innerHeight, document.documentElement.clientHeight, getViewportHeight());
+    // On mobile, lock canvas height to initial viewport height.
+    // If width hasn't changed, address bar expand/collapse must NEVER resize or rebuild tree!
+    if (H && Math.abs(newW - W) < 4) {
+      return false;
     }
+    newH = innerHeight;
   }
   const newDPR = newW < 768 ? 1 : Math.min(devicePixelRatio || 1, 2);
 
@@ -172,8 +173,8 @@ function resizeCanvas() {
   [canvas, treeCanvas].forEach((surface) => {
     surface.width = Math.round(W * DPR);
     surface.height = Math.round(H * DPR);
-    surface.style.width = W + 'px';
-    surface.style.height = H + 'px';
+    surface.style.width = '100%';
+    surface.style.height = '100%';
   });
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
   treeCtx.setTransform(DPR, 0, 0, DPR, 0, 0);
@@ -255,8 +256,8 @@ function buildTree() {
   const xJitter = W * 0.022;
   const yJitter = H * 0.026;
   const point = (x, y) => jitterPoint(x, y, xJitter, yJitter);
-  const trunkWidth = clamp(minSide * 0.075, 28, 68);
-  treeFoliageRadius = clamp(minSide * 0.085, 27, 72);
+  const trunkWidth = clamp(minSide * (isMobile() ? 0.082 : 0.075), 28, 68);
+  treeFoliageRadius = clamp(minSide * (isMobile() ? 0.115 : 0.085), isMobile() ? 34 : 27, 72);
 
   const root = { x: W * 1.055, y: H + 32 };
   const trunkOne = point(W * 0.87, H * 0.82);
@@ -334,8 +335,9 @@ function buildTree() {
   });
 
   const foliageBranches = majorBranches.concat(twigs, fineTwigs, trunk.slice(2));
-  const leafCount = isMobile() ? 520 : 900;
-  const sizeBase = clamp(minSide * (isMobile() ? 0.019 : 0.017), 6, 16);
+  const leafCount = isMobile() ? 380 : 900;
+  // Scale mobile tree leaves to prominent 15-32px to match falling leaves
+  const sizeBase = isMobile() ? clamp(minSide * 0.054, 18, 28) : clamp(minSide * 0.017, 6, 16);
   for (let i = 0; i < leafCount; i++) {
     const branch = foliageBranches[Math.floor(randomSource() * foliageBranches.length)];
     const branchPosition = randomBetween(0.28, 0.98);
@@ -345,11 +347,11 @@ function buildTree() {
     treeLeafSites.push({
       x: anchor.x + Math.cos(angle) * distance,
       y: anchor.y + Math.sin(angle) * distance * 0.62,
-      size: sizeBase * randomBetween(0.46, 1.62),
+      size: sizeBase * randomBetween(isMobile() ? 0.75 : 0.46, isMobile() ? 1.45 : 1.62),
       rot: randomBetween(-Math.PI, Math.PI),
       flip: randomSource() > 0.5 ? 1 : -1,
       imgIdx: Math.floor(randomSource() * leafImgs.length),
-      opacity: randomBetween(0.46, 0.88),
+      opacity: randomBetween(isMobile() ? 0.62 : 0.46, 0.92),
       reveal: clamp(
         branch.revealStart + (branch.revealEnd - branch.revealStart) * branchPosition + randomBetween(0.01, 0.07),
         0,
@@ -589,14 +591,19 @@ function startTree() {
 }
 
 function scheduleCanvasResize() {
-  if (isRevealing) return; // FIX: don't rebuild during wipe
+  if (isRevealing) return;
+  const newW = innerWidth;
+  // If mobile width hasn't changed, address bar hide/show must be completely ignored
+  if (isMobile() && Math.abs(newW - lastW) < 4) return;
+
   clearTimeout(resizeTimeout);
   resizeTimeout = setTimeout(() => {
     if (isRevealing) return;
-    const widthChanged = innerWidth !== lastW;
+    if (isMobile() && Math.abs(innerWidth - lastW) < 4) return;
+    const widthChanged = Math.abs(innerWidth - lastW) >= 4;
+    lastW = innerWidth;
     const didResize = resizeCanvas();
     if (didResize && widthChanged) {
-      lastW = innerWidth;
       initLeaves();
     }
   }, 140);
@@ -605,9 +612,6 @@ function scheduleCanvasResize() {
 resizeCanvas();
 initLeaves();
 addEventListener('resize', scheduleCanvasResize, { passive: true });
-if (window.visualViewport) {
-  window.visualViewport.addEventListener('resize', scheduleCanvasResize, { passive: true });
-}
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) {
     stopScene();
@@ -645,8 +649,8 @@ function liveElapsedSeconds() {
 
 function updateYouTubeLaunchUrl() {
   if (!youtubeListenLink || !currentPlaybackState.isPlaying) return;
-  const query = `${trackSearchQuery()} official video`;
-  youtubeListenLink.href = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}&t=${liveElapsedSeconds()}s`;
+  const query = `${trackSearchQuery()} official audio`;
+  youtubeListenLink.href = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
 }
 
 let currentPlaybackState = {
@@ -669,6 +673,7 @@ function playbackKey(state) {
 
 function getLiveProgress(state = currentPlaybackState) {
   const base = Math.max(0, Number(state.progressMs) || 0);
+  if (!state.isPlaying) return base;
   const elapsed = Math.max(0, Date.now() - (Number(state.updatedAt) || Date.now()));
   const progress = base + elapsed;
   return state.durationMs > 0 ? Math.min(progress, state.durationMs) : progress;
@@ -807,12 +812,17 @@ function renderSpotifyUI(state) {
     if (rawSpotifyText) rawSpotifyText.textContent = "[ playing nothing ]";
 
     if (lyricsScroll) {
-      lyricsScroll.innerHTML = '<p class="lyric-line-placeholder">no track playing right now — start listening on spotify or yt music</p>';
+      if (themeAudio && !themeAudio.paused && themeAudio.currentTime > 0) {
+        syncThemeAudioLyrics();
+      } else {
+        lyricsScroll.innerHTML = '<p class="lyric-line-placeholder">no track playing right now — start listening on spotify or yt music</p>';
+        if (lyricsStatusBadge) lyricsStatusBadge.textContent = "offline";
+      }
     }
-    if (lyricsStatusBadge) lyricsStatusBadge.textContent = "offline";
   }
 
   updateProgressBar();
+  updateUpperPlayButtonIcons(state.isPlaying);
 }
 
 function updateProgressBar() {
@@ -842,11 +852,77 @@ function updateProgressBar() {
   syncActiveLyric(progress);
 }
 
-// ── LIVE SYNCED LYRICS ENGINE (LRCLIB) ────────────────────────────────────
+// ── LIVE SYNCED LYRICS ENGINE (LRCLIB + LOCAL THEME SYNC) ─────────────────
 let currentLyrics = [];
 let currentLyricsTrackKey = "";
 let currentActiveLyricIndex = -1;
 let currentLyricsRequestId = 0;
+const lyricsCache = new Map();
+const lyricsNegativeCache = new Set();
+let isUserScrollingLyrics = false;
+let userLyricsScrollTimer = null;
+
+// Embedded synced LRC for site theme audio ("Hey There Delilah" by Plain White T's)
+const HEY_THERE_DELILAH_LRC = `
+[00:09.27] Hey there Delilah, what's it like in New York City?
+[00:12.71] I'm a thousand miles away, but girl, tonight you look so pretty, yes, you do
+[00:20.55] Times Square can't shine as bright as you, I swear it's true
+[00:27.42] Hey there Delilah, don't you worry about the distance
+[00:31.18] I'm right there if you get lonely
+[00:33.62] Give this song another listen, close your eyes
+[00:38.95] Listen to my voice, it's my disguise, I'm by your side
+[00:45.68] Oh, it's what you do to me
+[00:50.44] Oh, it's what you do to me
+[00:54.79] Oh, it's what you do to me
+[00:59.56] Oh, it's what you do to me, what you do to me
+[01:06.86] Hey there Delilah, I know times are getting hard
+[01:10.21] But just believe me, girl, someday I'll pay the bills with this guitar
+[01:15.08] We'll have it good
+[01:18.37] We'll have the life we knew we would, my word is good
+[01:25.29] Hey there Delilah, I've got so much left to say
+[01:28.71] If every simple song I wrote to you, would take your breath away
+[01:33.81] I'd write it all
+[01:36.72] Even more in love with me you'd fall, we'd have it all
+[01:43.49] Oh, it's what you do to me
+[01:47.96] Oh, it's what you do to me
+[01:52.53] Oh, it's what you do to me
+[01:57.33] Oh, it's what you do to me
+[02:01.65] A thousand miles seems pretty far
+[02:04.01] But they've got planes and trains and cars
+[02:06.11] I'd walk to you if I had no other way
+[02:11.04] Our friends would all make fun of us
+[02:13.41] And we'll just laugh along because
+[02:15.55] We know that none of them have felt this way
+[02:20.13] Delilah I can promise you, that by the time we get through
+[02:24.67] The world will never ever be the same, and you're to blame
+[02:34.51] Hey there Delilah, you be good and don't you miss me
+[02:38.03] Two more years and you'll be done with school
+[02:41.03] And I'll be making history like I do
+[02:46.04] You'll know it's all because of you
+[02:50.61] We can do whatever we want to
+[02:55.15] Hey there Delilah here's to you, this one's for you
+[03:04.29] Oh, it's what you do to me
+[03:08.81] Oh, it's what you do to me
+[03:13.38] Oh, it's what you do to me
+[03:18.19] Oh, it's what you do to me, what you do to me
+[03:24.26] Oh-oh, whoa-whoa, whoa, whoa
+[03:31.25] Oh whoa, whoa, whoa
+[03:35.30] Whoa, whoa, whoa
+[03:40.35] Oh-oh
+`;
+
+// Attach manual scroll detection to lyrics box
+if (lyricsScroll) {
+  const onUserScrollAction = () => {
+    isUserScrollingLyrics = true;
+    if (userLyricsScrollTimer) clearTimeout(userLyricsScrollTimer);
+    userLyricsScrollTimer = setTimeout(() => {
+      isUserScrollingLyrics = false;
+    }, 2800);
+  };
+  lyricsScroll.addEventListener('wheel', onUserScrollAction, { passive: true });
+  lyricsScroll.addEventListener('touchmove', onUserScrollAction, { passive: true });
+}
 
 function parseLRC(lrc) {
   if (!lrc) return [];
@@ -870,13 +946,50 @@ function parseLRC(lrc) {
   return result.sort((a, b) => a.timeMs - b.timeMs);
 }
 
+function syncThemeAudioLyrics() {
+  if (!themeAudio || themeAudio.paused || currentPlaybackState.isPlaying) return;
+  const themeKey = "hey_there_delilah_plain_white_ts";
+  if (currentLyricsTrackKey !== themeKey) {
+    currentLyricsTrackKey = themeKey;
+    currentLyrics = parseLRC(HEY_THERE_DELILAH_LRC);
+    renderLyricsLines(currentLyrics);
+    if (lyricsStatusBadge) lyricsStatusBadge.textContent = "theme sync";
+  }
+  const currentMs = Math.max(0, (themeAudio.currentTime || 0) * 1000);
+  syncActiveLyric(currentMs);
+}
+
 async function fetchSyncedLyrics(title, artist, durationMs) {
   if (!title) return;
   const trackKey = `${title}_${artist}`.toLowerCase();
   
   // If we already have loaded lyrics for this track, re-sync immediately
   if (currentLyricsTrackKey === trackKey && currentLyrics.length > 0) {
-    syncActiveLyric(getLiveProgress());
+    syncActiveLyric(getLiveProgress(), true);
+    return;
+  }
+
+  // Check in-memory cache
+  if (lyricsCache.has(trackKey)) {
+    const cached = lyricsCache.get(trackKey);
+    currentLyricsTrackKey = trackKey;
+    currentLyrics = cached.lyrics;
+    renderLyricsLines(currentLyrics);
+    if (lyricsStatusBadge) lyricsStatusBadge.textContent = cached.type;
+    syncActiveLyric(getLiveProgress(), true);
+    return;
+  }
+
+  // Prevent spamming LRCLIB repeatedly if this track is known to have no lyrics
+  if (lyricsNegativeCache.has(trackKey)) {
+    if (currentLyricsTrackKey !== trackKey) {
+      currentLyricsTrackKey = trackKey;
+      currentLyrics = [];
+      if (lyricsScroll) {
+        lyricsScroll.innerHTML = '<p class="lyric-line-placeholder">no lyrics found for this track</p>';
+      }
+      if (lyricsStatusBadge) lyricsStatusBadge.textContent = "no lyrics";
+    }
     return;
   }
 
@@ -890,75 +1003,99 @@ async function fetchSyncedLyrics(title, artist, durationMs) {
   }
   if (lyricsStatusBadge) lyricsStatusBadge.textContent = "fetching";
 
+  // Robust cleaning for title to maximize LRCLIB match rate
   const cleanTitle = title
     .replace(/\s*\(with.*?\)/gi, '')
     .replace(/\s*\[with.*?\]/gi, '')
-    .replace(/\s*\(feat\..*?\)/gi, '')
-    .replace(/\s*\[feat\..*?\]/gi, '')
+    .replace(/\s*\((?:feat\.|feat|ft\.|ft).*?\)/gi, '')
+    .replace(/\s*\[(?:feat\.|feat|ft\.|ft).*?\]/gi, '')
     .replace(/\s*\(from.*?\)/gi, '')
     .replace(/\s*\[from.*?\]/gi, '')
     .replace(/\s*-\s*from\s+.*$/gi, '')
     .replace(/\s*\(movie.*?\)/gi, '')
+    .replace(/\s*\(official\s*(?:video|music\s*video|audio|visualizer|lyric\s*video).*?\)/gi, '')
+    .replace(/\s*\[official\s*(?:video|music\s*video|audio|visualizer|lyric\s*video).*?\]/gi, '')
+    .replace(/\s*-\s*(?:official\s*video|official\s*audio|remastered|remaster|radio\s*edit|single\s*version|album\s*version|live).*$/gi, '')
     .replace(/\s*-\s*.*version.*/gi, '')
     .replace(/\s*-\s*.*remaster.*/gi, '')
     .replace(/\s*\(original.*?\)/gi, '')
     .trim();
   
-  // Extract primary artist
-  const cleanArtist = artist ? artist.split(/[\u2022;,\-\|]/)[0].trim() : "";
+  // Extract primary artist (split only on bullet, semicolon, pipe, slash, or spaced hyphen)
+  const cleanArtist = artist ? artist.split(/[\u2022;\|\/]|\s+-\s+/)[0].trim() : "";
+
+  // Helper to pick closest duration result
+  function pickBestResult(items, targetDurationMs) {
+    if (!items || items.length === 0) return null;
+    const syncedItems = items.filter(i => i.syncedLyrics);
+    const pool = syncedItems.length > 0 ? syncedItems : items;
+    if (targetDurationMs && targetDurationMs > 0) {
+      const targetSec = targetDurationMs / 1000;
+      let best = pool[0];
+      let bestDiff = Math.abs((best.duration || targetSec) - targetSec);
+      for (let i = 1; i < pool.length; i++) {
+        const diff = Math.abs((pool[i].duration || targetSec) - targetSec);
+        if (diff < bestDiff) {
+          best = pool[i];
+          bestDiff = diff;
+        }
+      }
+      return best;
+    }
+    return pool[0];
+  }
 
   try {
     let data = null;
 
-    // 1. Try exact match get
-    if (cleanArtist) {
+    // 1. Structured search with track_name and artist_name on /api/search
+    if (cleanArtist && cleanTitle) {
       try {
-        let url = `https://lrclib.net/api/get?track_name=${encodeURIComponent(cleanTitle)}&artist_name=${encodeURIComponent(cleanArtist)}`;
-        if (durationMs) url += `&duration=${Math.round(durationMs / 1000)}`;
-        const res = await fetch(url);
-        if (res.ok) data = await res.json();
-      } catch (e) {}
+        const searchRes = await fetch(`https://lrclib.net/api/search?track_name=${encodeURIComponent(cleanTitle)}&artist_name=${encodeURIComponent(cleanArtist)}`);
+        if (searchRes.ok) {
+          const list = await searchRes.json();
+          data = pickBestResult(list, durationMs);
+        }
+      } catch (_) {}
     }
 
-    // 2. Try search with clean title + clean artist
+    // 2. Exact match get via /api/get if structured search yielded nothing
+    if (!data || (!data.syncedLyrics && !data.plainLyrics)) {
+      if (cleanArtist && cleanTitle) {
+        try {
+          let url = `https://lrclib.net/api/get?track_name=${encodeURIComponent(cleanTitle)}&artist_name=${encodeURIComponent(cleanArtist)}`;
+          const res = await fetch(url);
+          if (res.ok) {
+            const getRes = await res.json();
+            if (getRes && (getRes.syncedLyrics || getRes.plainLyrics)) {
+              data = getRes;
+            }
+          }
+        } catch (_) {}
+      }
+    }
+
+    // 3. Fallback: query search
     if (!data || (!data.syncedLyrics && !data.plainLyrics)) {
       try {
         const query = cleanArtist ? `${cleanTitle} ${cleanArtist}` : cleanTitle;
         const searchRes = await fetch(`https://lrclib.net/api/search?q=${encodeURIComponent(query)}`);
         if (searchRes.ok) {
           const list = await searchRes.json();
-          if (list && list.length > 0) {
-            data = list.find(item => item.syncedLyrics) || list[0];
-          }
+          data = pickBestResult(list, durationMs);
         }
-      } catch (e) {}
+      } catch (_) {}
     }
 
-    // 3. Try search with full raw title + artist
-    if (!data || (!data.syncedLyrics && !data.plainLyrics)) {
-      try {
-        const query = `${title} ${artist}`;
-        const searchRes = await fetch(`https://lrclib.net/api/search?q=${encodeURIComponent(query)}`);
-        if (searchRes.ok) {
-          const list = await searchRes.json();
-          if (list && list.length > 0) {
-            data = list.find(item => item.syncedLyrics) || list[0];
-          }
-        }
-      } catch (e) {}
-    }
-
-    // 4. Try search with title only
+    // 4. Raw title search fallback
     if (!data || (!data.syncedLyrics && !data.plainLyrics)) {
       try {
         const titleSearchRes = await fetch(`https://lrclib.net/api/search?q=${encodeURIComponent(cleanTitle)}`);
         if (titleSearchRes.ok) {
           const list = await titleSearchRes.json();
-          if (list && list.length > 0) {
-            data = list.find(item => item.syncedLyrics) || list[0];
-          }
+          data = pickBestResult(list, durationMs);
         }
-      } catch (e) {}
+      } catch (_) {}
     }
 
     // Guard against stale asynchronous responses when songs change
@@ -971,15 +1108,17 @@ async function fetchSyncedLyrics(title, artist, durationMs) {
 
     if (data && data.syncedLyrics) {
       currentLyrics = parseLRC(data.syncedLyrics);
+      lyricsCache.set(trackKey, { lyrics: currentLyrics, type: "synced" });
       renderLyricsLines(currentLyrics);
       if (lyricsStatusBadge) lyricsStatusBadge.textContent = "synced";
-      
-      syncActiveLyric(getLiveProgress());
+      syncActiveLyric(getLiveProgress(), true);
     } else if (data && data.plainLyrics) {
       currentLyrics = data.plainLyrics.split('\n').filter(t => t.trim()).map(t => ({ timeMs: 0, text: t.trim() }));
+      lyricsCache.set(trackKey, { lyrics: currentLyrics, type: "plain text" });
       renderLyricsLines(currentLyrics);
       if (lyricsStatusBadge) lyricsStatusBadge.textContent = "plain text";
     } else {
+      lyricsNegativeCache.add(trackKey);
       if (lyricsScroll) {
         lyricsScroll.innerHTML = '<p class="lyric-line-placeholder">no lyrics found for this track</p>';
       }
@@ -1009,56 +1148,73 @@ function renderLyricsLines(lyrics) {
     p.dataset.time = line.timeMs;
     p.textContent = line.text;
     p.addEventListener('click', () => {
-      highlightLyricIndex(idx);
+      highlightLyricIndex(idx, true);
     });
     lyricsScroll.appendChild(p);
   });
 }
 
-function highlightLyricIndex(idx) {
+function highlightLyricIndex(idx, forceScroll = false) {
+  if (!lyricsScroll) return;
   currentActiveLyricIndex = idx;
   const lines = lyricsScroll.querySelectorAll('.lyric-line');
   lines.forEach((l, i) => {
     if (i === idx) {
       l.className = 'lyric-line active';
-      // Calculate exact offset of the line inside lyricsScroll to keep it vertically centered
-      const scrollBoxRect = lyricsScroll.getBoundingClientRect();
-      const lineRect = l.getBoundingClientRect();
-      const relativeTop = lineRect.top - scrollBoxRect.top + lyricsScroll.scrollTop;
-      const targetScrollTop = relativeTop - (lyricsScroll.clientHeight / 2) + (lineRect.height / 2);
-      lyricsScroll.scrollTo({ top: Math.max(0, targetScrollTop), behavior: 'smooth' });
+      // Deterministic centering using offsetTop, respecting manual reading scroll
+      if (!isUserScrollingLyrics || forceScroll) {
+        const targetScrollTop = l.offsetTop - (lyricsScroll.clientHeight / 2) + (l.offsetHeight / 2);
+        lyricsScroll.scrollTo({ top: Math.max(0, targetScrollTop), behavior: 'smooth' });
+      }
     } else if (i < idx) {
       l.className = 'lyric-line past';
     } else {
       l.className = 'lyric-line';
     }
   });
-
 }
 
-function syncActiveLyric(progressMs) {
+const LYRICS_ADVANCE_OFFSET_MS = 300; // Offset for internet latency and buffering delays
+
+function syncActiveLyric(progressMs, forceScroll = false) {
   if (!currentLyrics || currentLyrics.length === 0 || !lyricsScroll) return;
+
+  // Start / scroll lyrics 300ms ahead to compensate for streaming and audio buffering delay
+  const effectiveProgressMs = progressMs + LYRICS_ADVANCE_OFFSET_MS;
 
   let activeIdx = -1;
   for (let i = 0; i < currentLyrics.length; i++) {
-    if (currentLyrics[i].timeMs <= progressMs) {
+    if (currentLyrics[i].timeMs <= effectiveProgressMs) {
       activeIdx = i;
     } else {
       break;
     }
   }
 
-  if (activeIdx !== currentActiveLyricIndex) {
+  if (activeIdx !== currentActiveLyricIndex || forceScroll) {
     if (activeIdx === -1) {
       currentActiveLyricIndex = -1;
       const lines = lyricsScroll.querySelectorAll('.lyric-line');
       lines.forEach(l => l.className = 'lyric-line');
-      lyricsScroll.scrollTo({ top: 0, behavior: 'smooth' });
+      if (!isUserScrollingLyrics || forceScroll) {
+        lyricsScroll.scrollTo({ top: 0, behavior: 'smooth' });
+      }
     } else {
-      highlightLyricIndex(activeIdx);
+      highlightLyricIndex(activeIdx, forceScroll);
     }
   }
 }
+
+// Fast 100ms real-time sync when lyrics view is active for responsive vocal tracking
+setInterval(() => {
+  if (currentActiveMediaView === "lyrics") {
+    if (currentPlaybackState.isPlaying) {
+      syncActiveLyric(getLiveProgress());
+    } else if (themeAudio && !themeAudio.paused && themeAudio.currentTime > 0) {
+      syncThemeAudioLyrics();
+    }
+  }
+}, 100);
 
 // Update progress bar every second when live
 setInterval(() => {
@@ -1128,6 +1284,7 @@ function connectLanyard() {
 }
 
 function handleLanyardData(data) {
+  if (isSpotifyEmbedPlaying) return;
   if (data && data.listening_to_spotify && data.spotify) {
     lanyardSocketActive = true;
     const s = data.spotify;
@@ -1149,8 +1306,8 @@ function handleLanyardData(data) {
     renderSpotifyUI(currentPlaybackState);
   } else {
     lanyardSocketActive = false;
-    // If Last.fm is currently active or was active recently, do NOT override with offline
-    if (lastFmNowPlayingActive || (Date.now() - lastFmLastSeenPlaying < 25000)) {
+    // If embed playing or Last.fm is currently active, do NOT override with offline
+    if (isSpotifyEmbedPlaying || lastFmNowPlayingActive || (Date.now() - lastFmLastSeenPlaying < 25000)) {
       return;
     }
 
@@ -1208,6 +1365,17 @@ function switchMediaView(viewName) {
 
   if (viewName === "lyrics") {
     if (lyricsView) lyricsView.classList.remove('hidden');
+    if (currentPlaybackState.isPlaying && currentPlaybackState.title) {
+      if (currentLyrics.length === 0) {
+        fetchSyncedLyrics(currentPlaybackState.title, currentPlaybackState.artist, currentPlaybackState.durationMs);
+      }
+      setTimeout(() => syncActiveLyric(getLiveProgress(), true), 80);
+      setTimeout(() => syncActiveLyric(getLiveProgress(), true), 380);
+    } else if (themeAudio && !themeAudio.paused) {
+      syncThemeAudioLyrics();
+      setTimeout(() => syncThemeAudioLyrics(), 80);
+      setTimeout(() => syncThemeAudioLyrics(), 380);
+    }
   } else if (viewName === "playlist") {
     if (embedView) embedView.classList.remove('hidden');
   }
@@ -1228,6 +1396,213 @@ if (toggleLyricsBtn) {
 if (toggleEmbedBtn) {
   toggleEmbedBtn.addEventListener('click', () => switchMediaView('playlist'));
 }
+
+// ── SPOTIFY EMBED CONTROLLER & UPPER PLAY SYNC ──────────────────────────
+const SPOTIFY_TRACK_MAP = new Map();
+const spotifyArtworkCache = new Map();
+let spotifyEmbedController = null;
+let isSpotifyEmbedPlaying = false;
+let currentEmbedPlayingUri = "";
+
+async function loadSpotifyTrackCatalog() {
+  try {
+    const res = await fetch('data/spotify.json');
+    if (!res.ok) return;
+    const data = await res.json();
+    if (data.playlists && Array.isArray(data.playlists)) {
+      data.playlists.forEach(pl => {
+        (pl.songs || []).forEach(song => {
+          let trackId = "";
+          if (song.url) {
+            const m = song.url.match(/track\/([a-zA-Z0-9]+)/);
+            if (m) trackId = m[1];
+          }
+          let durationMs = 0;
+          if (song.duration) {
+            const parts = song.duration.split(':').map(Number);
+            if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
+              durationMs = (parts[0] * 60 + parts[1]) * 1000;
+            }
+          }
+          const item = {
+            title: song.title,
+            artist: song.artist,
+            url: song.url,
+            durationMs: durationMs
+          };
+          if (trackId) SPOTIFY_TRACK_MAP.set(trackId, item);
+          if (song.title) SPOTIFY_TRACK_MAP.set(song.title.toLowerCase().trim(), item);
+        });
+      });
+    }
+  } catch (err) {
+    console.warn("Could not load spotify.json catalog:", err);
+  }
+}
+loadSpotifyTrackCatalog();
+
+function updateUpperPlayButtonIcons(isPlaying) {
+  const upperPlaySvg = upperPlayBtn ? upperPlayBtn.querySelector('.play-svg') : null;
+  const upperPauseSvg = upperPlayBtn ? upperPlayBtn.querySelector('.pause-svg') : null;
+
+  if (isPlaying) {
+    if (upperPlaySvg) upperPlaySvg.style.display = 'none';
+    if (upperPauseSvg) upperPauseSvg.style.display = 'block';
+    if (albumArtWrap) albumArtWrap.classList.add('is-playing');
+  } else {
+    if (upperPlaySvg) upperPlaySvg.style.display = 'block';
+    if (upperPauseSvg) upperPauseSvg.style.display = 'none';
+    if (albumArtWrap) albumArtWrap.classList.remove('is-playing');
+  }
+}
+
+async function fetchSpotifyArtwork(trackId, title, artist) {
+  if (!trackId) return;
+  if (spotifyArtworkCache.has(trackId)) {
+    const art = spotifyArtworkCache.get(trackId);
+    if (art && trackArt && currentPlaybackState.isPlaying) {
+      trackArt.src = art;
+      currentPlaybackState.albumArt = art;
+    }
+    return;
+  }
+
+  try {
+    const oembedUrl = `https://open.spotify.com/oembed?url=https://open.spotify.com/track/${encodeURIComponent(trackId)}`;
+    const res = await fetch(oembedUrl);
+    if (res.ok) {
+      const data = await res.json();
+      if (data.thumbnail_url) {
+        spotifyArtworkCache.set(trackId, data.thumbnail_url);
+        if (trackArt && currentPlaybackState.isPlaying) {
+          trackArt.src = data.thumbnail_url;
+          currentPlaybackState.albumArt = data.thumbnail_url;
+        }
+        return;
+      }
+    }
+  } catch (_) {}
+
+  if (title) {
+    const meta = await fetchArtworkAndDuration(title, artist);
+    if (meta && meta.artwork) {
+      spotifyArtworkCache.set(trackId, meta.artwork);
+      if (trackArt && currentPlaybackState.isPlaying) {
+        trackArt.src = meta.artwork;
+        currentPlaybackState.albumArt = meta.artwork;
+      }
+    }
+  }
+}
+
+function onSpotifyEmbedEvent(data) {
+  if (!data) return;
+  const isPaused = Boolean(data.isPaused);
+  const isPlaying = !isPaused;
+  isSpotifyEmbedPlaying = isPlaying;
+
+  const rawUri = data.playingURI || currentEmbedPlayingUri || "";
+  if (data.playingURI) currentEmbedPlayingUri = data.playingURI;
+  const trackId = rawUri ? rawUri.split(':').pop() : "";
+
+  let matched = trackId ? SPOTIFY_TRACK_MAP.get(trackId) : null;
+  const title = (matched && matched.title) || (isPlaying ? currentPlaybackState.title : SPOTIFY_CONFIG.playlist.title);
+  const artist = (matched && matched.artist) || (isPlaying ? currentPlaybackState.artist : SPOTIFY_CONFIG.playlist.artist);
+  const songUrl = (matched && matched.url) || (trackId ? `https://open.spotify.com/track/${trackId}` : SPOTIFY_CONFIG.playlist.url);
+  const durationMs = (data.duration > 0) ? data.duration : ((matched && matched.durationMs) || currentPlaybackState.durationMs);
+  const positionMs = typeof data.position === 'number' ? data.position : 0;
+
+  if (isPlaying) {
+    if (themeAudio && !themeAudio.paused) {
+      themeAudio.pause();
+    }
+
+    currentPlaybackState = {
+      isPlaying: true,
+      title: title,
+      artist: artist,
+      albumArt: currentPlaybackState.albumArt || SPOTIFY_CONFIG.playlist.albumArt,
+      songUrl: songUrl,
+      progressMs: positionMs,
+      durationMs: durationMs,
+      updatedAt: Date.now(),
+      timingSource: "embed",
+      source: "spotify"
+    };
+
+    renderSpotifyUI(currentPlaybackState);
+    updateUpperPlayButtonIcons(true);
+
+    if (trackId) {
+      fetchSpotifyArtwork(trackId, title, artist);
+    }
+  } else {
+    updateUpperPlayButtonIcons(false);
+    if (currentPlaybackState.timingSource === "embed") {
+      currentPlaybackState.isPlaying = false;
+      currentPlaybackState.progressMs = positionMs;
+      renderSpotifyUI(currentPlaybackState);
+    }
+  }
+}
+
+function toggleUpperPlayback() {
+  if (spotifyEmbedController) {
+    try {
+      spotifyEmbedController.togglePlay();
+      return;
+    } catch (e) {
+      console.warn("togglePlay error:", e);
+    }
+  }
+
+  if (currentActiveMediaView !== "playlist") {
+    switchMediaView("playlist");
+  }
+}
+
+if (upperPlayBtn) {
+  upperPlayBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    toggleUpperPlayback();
+  });
+}
+
+if (albumArtWrap) {
+  albumArtWrap.addEventListener('click', (e) => {
+    if (e.target !== upperPlayBtn && !upperPlayBtn?.contains(e.target)) {
+      toggleUpperPlayback();
+    }
+  });
+}
+
+window.onSpotifyIframeApiReady = (IFrameAPI) => {
+  const element = document.getElementById('spotify-embed-slot') || document.getElementById('spotify-frame');
+  if (!element) return;
+
+  const options = {
+    width: '100%',
+    height: '152',
+    uri: 'spotify:playlist:14d7SJJHjhwEerGgKaUa4J'
+  };
+
+  IFrameAPI.createController(element, options, (EmbedController) => {
+    spotifyEmbedController = EmbedController;
+
+    EmbedController.addListener('ready', () => {
+      // Controller initialized and ready
+    });
+
+    EmbedController.addListener('playback_started', (e) => {
+      onSpotifyEmbedEvent(e.data);
+    });
+
+    EmbedController.addListener('playback_update', (e) => {
+      onSpotifyEmbedEvent(e.data);
+    });
+  });
+};
 
 // ── LAST.FM REAL-TIME 24/7 SPOTIFY CLOUD TRACKER ─────────────────────────
 let lastFmTrackStartTime = 0;
@@ -1279,6 +1654,7 @@ async function fetchArtworkAndDuration(title, artist) {
 }
 
 async function fetchLastFmNowPlaying() {
+  if (isSpotifyEmbedPlaying) return;
   if (!SPOTIFY_CONFIG.lastfm || !SPOTIFY_CONFIG.lastfm.username || !SPOTIFY_CONFIG.lastfm.apiKey) return;
   try {
     const url = `https://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&user=${encodeURIComponent(SPOTIFY_CONFIG.lastfm.username)}&api_key=${SPOTIFY_CONFIG.lastfm.apiKey}&format=json&limit=1&_=${Date.now()}`;
@@ -1351,6 +1727,9 @@ async function fetchLastFmNowPlaying() {
             if (meta.durationMs) {
               currentPlaybackState.durationMs = meta.durationMs;
               updateProgressBar();
+              if (currentLyrics.length === 0 && !lyricsNegativeCache.has(trackKey)) {
+                fetchSyncedLyrics(title, artist, meta.durationMs);
+              }
             }
           });
         }
@@ -1437,11 +1816,17 @@ function doDrop(e) {
 
   // ensure aesthetic is at top (scroll 0) before measuring clip
   aestheticRoot.scrollTop = 0;
+  const contentScrollWrap = document.getElementById('content-scroll-wrap');
+  if (contentScrollWrap) contentScrollWrap.scrollTop = 0;
 
   const playPromise = themeAudio.play();
 
   if (playPromise && typeof playPromise.then === 'function') {
-    playPromise.catch((err) => {
+    playPromise.then(() => {
+      if (!currentPlaybackState.isPlaying && currentActiveMediaView === "lyrics") {
+        syncThemeAudioLyrics();
+      }
+    }).catch((err) => {
       console.warn("themeAudio playback blocked or failed:", err);
     });
   }
@@ -1933,7 +2318,40 @@ async function syncRealDataSources() {
     }
   } catch (_) {}
 
-  // 2. Sync live GitHub repos directly from API
+  // 2. Load local github.json and youtube.json
+  try {
+    const ghRes = await fetch('data/github.json');
+    if (ghRes.ok) {
+      const ghJson = await ghRes.json();
+      if (ghJson.repositories && Array.isArray(ghJson.repositories) && ghJson.repositories.length > 0) {
+        applyGitHubReposToBranch(ghJson.repositories);
+      }
+    }
+  } catch (_) {}
+
+  try {
+    const ytRes = await fetch('data/youtube.json');
+    if (ytRes.ok) {
+      const ytJson = await ytRes.json();
+      if (ytJson.playlists && Array.isArray(ytJson.playlists) && ytJson.playlists.length > 0) {
+        BRANCH_DATA.youtube.nodes = ytJson.playlists.map((p, idx) => ({
+          id: p.id || `yt-pl-${idx}`,
+          title: p.title || "YouTube Channel",
+          subtitle: p.subtitle || "@kunal1320k",
+          tag: "Playlists",
+          url: p.url || "https://www.youtube.com/@kunal1320k",
+          subBranches: (p.songs || []).map(s => ({
+            title: s.title,
+            artist: s.artist || "@kunal1320k",
+            duration: "Open ↗",
+            url: s.url || p.url
+          }))
+        }));
+      }
+    }
+  } catch (_) {}
+
+  // 3. Sync live GitHub repos directly from API (if not rate-limited)
   try {
     const res = await fetch('https://api.github.com/users/kunal1320k/repos?sort=updated&per_page=10');
     if (res.ok) {
@@ -2056,28 +2474,141 @@ function updateBranchSvgDimensions() {
   branchTreeSvg.style.height = `${h}px`;
 }
 
-// Generates an organic cubic bezier path from source (x0, y0) to target (x1, y1)
-function createBranchPath(x0, y0, x1, y1, isSecondary = false) {
+// Generates an organic circular arc path from source (x0, y0) to target (x1, y1)
+// with collision avoidance ensuring ZERO overlap with any adjacent link cards
+function createBranchPath(x0, y0, x1, y1, isSecondary = false, ctx = null) {
   const dx = x1 - x0;
   const dy = y1 - y0;
 
-  // Natural organic tree-branch curvature with clean horizontal exit and entry tangents
-  const cx1 = x0 + dx * (isSecondary ? 0.38 : 0.46);
-  const cy1 = y0 + dy * 0.04;
-  const cx2 = x0 + dx * (isSecondary ? 0.65 : 0.74);
-  const cy2 = y1 - dy * 0.04;
+  let d = '';
+
+  if (isSecondary) {
+    // Secondary sub-branch: sweeping circular arc
+    const cx1 = x0 + dx * 0.36;
+    const cy1 = y0 + dy * 0.62;
+    const cx2 = x0 + dx * 0.72;
+    const cy2 = y1;
+    d = `M ${x0.toFixed(1)} ${y0.toFixed(1)} C ${cx1.toFixed(1)} ${cy1.toFixed(1)}, ${cx2.toFixed(1)} ${cy2.toFixed(1)}, ${x1.toFixed(1)} ${y1.toFixed(1)}`;
+  } else if (ctx && ctx.gridRect) {
+    const grid = ctx.gridRect;
+    const sRect = ctx.sourceRect;
+    const key = ctx.key;
+    const isLeft = ctx.isLeftCol;
+
+    if (!isLeft) {
+      // Right Column cards (reddit, telegram, steam):
+      // The card is on the right column; right of this is open space leading to target.
+      // Egress horizontally from x0 into the open gutter before swooping towards target.
+      const cx1 = x0 + Math.max(dx * 0.45, 40);
+      const cy1 = y0;
+      const cx2 = x1 - Math.max(dx * 0.28, 24);
+      const cy2 = y1;
+      d = `M ${x0.toFixed(1)} ${y0.toFixed(1)} C ${cx1.toFixed(1)} ${cy1.toFixed(1)}, ${cx2.toFixed(1)} ${cy2.toFixed(1)}, ${x1.toFixed(1)} ${y1.toFixed(1)}`;
+    } else if (key === 'github') {
+      // GitHub (Row 0, Col 1): Climb vertically above github, sweep across top above reddit, swoop to target
+      const clearY = grid.top - 20;
+      const wpX = grid.right + 26;
+      const wpY = grid.top - 4;
+
+      const segA = `C ${x0.toFixed(1)} ${(y0 - 15).toFixed(1)}, ${x0.toFixed(1)} ${(clearY + 10).toFixed(1)}, ${x0.toFixed(1)} ${clearY.toFixed(1)}`;
+      const segB = `C ${(x0 + 80).toFixed(1)} ${(clearY - 4).toFixed(1)}, ${(grid.right - 20).toFixed(1)} ${(clearY - 4).toFixed(1)}, ${wpX.toFixed(1)} ${wpY.toFixed(1)}`;
+
+      const dx2 = x1 - wpX;
+      const dy2 = y1 - wpY;
+      const cp3x = wpX + Math.max(dx2 * 0.35, 18);
+      const cp3y = wpY + dy2 * 0.42;
+      const cp4x = x1 - Math.max(dx2 * 0.24, 20);
+      const cp4y = y1;
+      const segC = `C ${cp3x.toFixed(1)} ${cp3y.toFixed(1)}, ${cp4x.toFixed(1)} ${cp4y.toFixed(1)}, ${x1.toFixed(1)} ${y1.toFixed(1)}`;
+
+      d = `M ${x0.toFixed(1)} ${y0.toFixed(1)} ${segA} ${segB} ${segC}`;
+    } else if (key === 'spotify') {
+      // Spotify (Row 3, Col 1): Drop vertically below spotify, sweep across bottom under grid, swoop to target
+      const clearY = grid.bottom + 20;
+      const wpX = grid.right + 26;
+      const wpY = grid.bottom + 4;
+
+      const segA = `C ${x0.toFixed(1)} ${(y0 + 15).toFixed(1)}, ${x0.toFixed(1)} ${(clearY - 10).toFixed(1)}, ${x0.toFixed(1)} ${clearY.toFixed(1)}`;
+      const segB = `C ${(x0 + 80).toFixed(1)} ${(clearY + 4).toFixed(1)}, ${(grid.right - 20).toFixed(1)} ${(clearY + 4).toFixed(1)}, ${wpX.toFixed(1)} ${wpY.toFixed(1)}`;
+
+      const dx2 = x1 - wpX;
+      const dy2 = y1 - wpY;
+      const cp3x = wpX + Math.max(dx2 * 0.35, 18);
+      const cp3y = wpY + dy2 * 0.42;
+      const cp4x = x1 - Math.max(dx2 * 0.24, 20);
+      const cp4y = y1;
+      const segC = `C ${cp3x.toFixed(1)} ${cp3y.toFixed(1)}, ${cp4x.toFixed(1)} ${cp4y.toFixed(1)}, ${x1.toFixed(1)} ${y1.toFixed(1)}`;
+
+      d = `M ${x0.toFixed(1)} ${y0.toFixed(1)} ${segA} ${segB} ${segC}`;
+    } else if (key === 'myanimelist') {
+      // MyAnimeList (Row 1, Col 1): Curve through active card to left edge, up around left margin, across top above reddit
+      const clearY = grid.top - 20;
+      const wpX = grid.right + 26;
+      const wpY = grid.top - 4;
+      const cardLeft = sRect.left;
+
+      const seg0 = `C ${(x0 - 60).toFixed(1)} ${y0.toFixed(1)}, ${(cardLeft + 30).toFixed(1)} ${y0.toFixed(1)}, ${cardLeft.toFixed(1)} ${y0.toFixed(1)}`;
+      const seg1 = `C ${(grid.left - 26).toFixed(1)} ${y0.toFixed(1)}, ${(grid.left - 26).toFixed(1)} ${clearY.toFixed(1)}, ${(grid.left + 10).toFixed(1)} ${clearY.toFixed(1)}`;
+      const seg2 = `C ${(grid.left + 180).toFixed(1)} ${clearY.toFixed(1)}, ${(grid.right - 20).toFixed(1)} ${(clearY - 4).toFixed(1)}, ${wpX.toFixed(1)} ${wpY.toFixed(1)}`;
+
+      const dx2 = x1 - wpX;
+      const dy2 = y1 - wpY;
+      const cp3x = wpX + Math.max(dx2 * 0.35, 18);
+      const cp3y = wpY + dy2 * 0.42;
+      const cp4x = x1 - Math.max(dx2 * 0.24, 20);
+      const cp4y = y1;
+      const seg3 = `C ${cp3x.toFixed(1)} ${cp3y.toFixed(1)}, ${cp4x.toFixed(1)} ${cp4y.toFixed(1)}, ${x1.toFixed(1)} ${y1.toFixed(1)}`;
+
+      d = `M ${x0.toFixed(1)} ${y0.toFixed(1)} ${seg0} ${seg1} ${seg2} ${seg3}`;
+    } else if (key === 'youtube') {
+      // YouTube (Row 2, Col 1): Curve through active card to left edge, down around left margin, across bottom under grid
+      const clearY = grid.bottom + 20;
+      const wpX = grid.right + 26;
+      const wpY = grid.bottom + 4;
+      const cardLeft = sRect.left;
+
+      const seg0 = `C ${(x0 - 60).toFixed(1)} ${y0.toFixed(1)}, ${(cardLeft + 30).toFixed(1)} ${y0.toFixed(1)}, ${cardLeft.toFixed(1)} ${y0.toFixed(1)}`;
+      const seg1 = `C ${(grid.left - 26).toFixed(1)} ${y0.toFixed(1)}, ${(grid.left - 26).toFixed(1)} ${clearY.toFixed(1)}, ${(grid.left + 10).toFixed(1)} ${clearY.toFixed(1)}`;
+      const seg2 = `C ${(grid.left + 180).toFixed(1)} ${clearY.toFixed(1)}, ${(grid.right - 20).toFixed(1)} ${(clearY + 4).toFixed(1)}, ${wpX.toFixed(1)} ${wpY.toFixed(1)}`;
+
+      const dx2 = x1 - wpX;
+      const dy2 = y1 - wpY;
+      const cp3x = wpX + Math.max(dx2 * 0.35, 18);
+      const cp3y = wpY + dy2 * 0.42;
+      const cp4x = x1 - Math.max(dx2 * 0.24, 20);
+      const cp4y = y1;
+      const seg3 = `C ${cp3x.toFixed(1)} ${cp3y.toFixed(1)}, ${cp4x.toFixed(1)} ${cp4y.toFixed(1)}, ${x1.toFixed(1)} ${y1.toFixed(1)}`;
+
+      d = `M ${x0.toFixed(1)} ${y0.toFixed(1)} ${seg0} ${seg1} ${seg2} ${seg3}`;
+    } else {
+      const cx1 = x0 + dx * 0.35;
+      const cy1 = y0;
+      const cx2 = x1 - dx * 0.25;
+      const cy2 = y1;
+      d = `M ${x0.toFixed(1)} ${y0.toFixed(1)} C ${cx1.toFixed(1)} ${cy1.toFixed(1)}, ${cx2.toFixed(1)} ${cy2.toFixed(1)}, ${x1.toFixed(1)} ${y1.toFixed(1)}`;
+    }
+  } else {
+    // Default fallback
+    const arcBulge = Math.min(Math.max(Math.abs(dy) * 0.16, 8), 36);
+    const arcDir = dy >= 0 ? 1 : -1;
+    const cx1 = x0 + dx * 0.28;
+    const cy1 = y0 + dy * 0.72 + (arcDir * arcBulge * 0.25);
+    const cx2 = x0 + dx * 0.68;
+    const cy2 = y1;
+    d = `M ${x0.toFixed(1)} ${y0.toFixed(1)} C ${cx1.toFixed(1)} ${cy1.toFixed(1)}, ${cx2.toFixed(1)} ${cy2.toFixed(1)}, ${x1.toFixed(1)} ${y1.toFixed(1)}`;
+  }
 
   const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-  path.setAttribute("d", `M ${x0.toFixed(1)} ${y0.toFixed(1)} C ${cx1.toFixed(1)} ${cy1.toFixed(1)}, ${cx2.toFixed(1)} ${cy2.toFixed(1)}, ${x1.toFixed(1)} ${y1.toFixed(1)}`);
+  path.setAttribute("d", d);
   path.setAttribute("class", `tree-branch-line ${isSecondary ? 'secondary' : ''}`);
   path.setAttribute("fill", "none");
-  path.setAttribute("stroke", isSecondary ? "rgba(255, 255, 255, 0.5)" : "rgba(255, 255, 255, 0.88)");
-  path.setAttribute("stroke-width", isSecondary ? "1.4" : "1.8");
+  path.setAttribute("stroke", isSecondary ? "rgba(255, 255, 255, 0.24)" : "rgba(255, 255, 255, 0.40)");
+  path.setAttribute("stroke-width", isSecondary ? "1.2" : "1.5");
   path.setAttribute("stroke-linecap", "round");
   path.setAttribute("stroke-linejoin", "round");
 
   // Animated draw-in effect with guaranteed visibility
-  const approxLength = Math.max(Math.ceil(Math.hypot(dx, dy) * 1.35) + 30, 80);
+  const approxLength = Math.max(Math.ceil(Math.hypot(dx, dy) * 2.2) + 250, 400);
   path.style.strokeDasharray = `${approxLength}`;
   path.style.strokeDashoffset = `${approxLength}`;
 
@@ -2085,11 +2616,11 @@ function createBranchPath(x0, y0, x1, y1, isSecondary = false) {
   try {
     path.animate(
       [
-        { strokeDashoffset: `${approxLength}`, opacity: 0.35 },
+        { strokeDashoffset: `${approxLength}`, opacity: 0.25 },
         { strokeDashoffset: '0', opacity: 1 }
       ],
       {
-        duration: 300,
+        duration: 320,
         easing: 'cubic-bezier(0.16, 1, 0.3, 1)',
         fill: 'forwards'
       }
@@ -2102,19 +2633,21 @@ function createBranchPath(x0, y0, x1, y1, isSecondary = false) {
       path.style.strokeDashoffset = '0';
       path.style.opacity = '1';
     }
-  }, 320);
+  }, 340);
 
   return path;
 }
 
-// Clean solid joint dot at fork or node attachment (no brown outline)
-function createBranchDot(x, y, isSecondary = false) {
+// Clean circular ring joint dot at fork or node attachment (matching reference image)
+function createBranchDot(x, y, isSecondary = false, isOrigin = false) {
   const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
   circle.setAttribute("cx", x.toFixed(1));
   circle.setAttribute("cy", y.toFixed(1));
-  circle.setAttribute("r", isSecondary ? "2.5" : "3.2");
-  circle.setAttribute("class", `tree-branch-node-dot ${isSecondary ? 'secondary' : ''}`);
-  circle.setAttribute("fill", isSecondary ? "rgba(232, 226, 217, 0.8)" : "#ffffff");
+  circle.setAttribute("r", isOrigin ? "3.2" : (isSecondary ? "2.2" : "3.0"));
+  circle.setAttribute("class", `tree-branch-node-dot ${isOrigin ? 'origin' : ''} ${isSecondary ? 'secondary' : ''}`);
+  circle.setAttribute("fill", isOrigin ? "#ffffff" : "rgba(14, 13, 11, 0.92)");
+  circle.setAttribute("stroke", isOrigin ? "rgba(255, 255, 255, 0.4)" : (isSecondary ? "rgba(255, 255, 255, 0.45)" : "rgba(255, 255, 255, 0.65)"));
+  circle.setAttribute("stroke-width", isOrigin ? "2.5" : (isSecondary ? "1.2" : "1.5"));
   return circle;
 }
 
@@ -2182,18 +2715,38 @@ function renderPrimaryBranches(key, sourceElem) {
   clearBranchNodes();
 
   const sourceRect = sourceElem.getBoundingClientRect();
-  const x0 = sourceRect.right;
-  const y0 = sourceRect.top + sourceRect.height / 2;
+  const linksGridElem = document.getElementById('links-grid');
+  const gridRect = linksGridElem ? linksGridElem.getBoundingClientRect() : null;
 
-  // Add clean origin joint dot directly on the hovered link
-  const originDot = createBranchDot(x0, y0, false);
+  // Locate arrow icon inside hovered card so the origin dot is neatly framed
+  const arrow = sourceElem.querySelector('.arrow');
+  const arrowRect = arrow ? arrow.getBoundingClientRect() : null;
+  const x0 = arrowRect ? (arrowRect.left + arrowRect.width / 2) : (sourceRect.right - 14);
+  const y0 = arrowRect ? (arrowRect.top + arrowRect.height / 2) : (sourceRect.top + sourceRect.height / 2);
+
+  // Add clean origin joint ring directly on the hovered link arrow
+  const originDot = createBranchDot(x0, y0, false, true);
   branchTreeSvg.appendChild(originDot);
 
   const nodes = data.nodes;
   const positions = computeSafeBranchPositions(sourceRect, nodes.length, key);
   const cardH = 76;
 
-  // Draw organic curves & place cards
+  // Background subtle orbital guide arc framing node cluster
+  if (positions.length > 1) {
+    const topY = positions[0].y + cardH / 2;
+    const bottomY = positions[positions.length - 1].y + cardH / 2;
+    const minCardX = Math.min(...positions.map(p => p.x));
+    const arcX = minCardX - 16;
+    const arcPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    arcPath.setAttribute("class", "tree-branch-orbital-arc");
+    arcPath.setAttribute("d", `M ${(arcX + 16).toFixed(1)} ${(topY - 18).toFixed(1)} Q ${(arcX - 14).toFixed(1)} ${((topY + bottomY) / 2).toFixed(1)}, ${(arcX + 16).toFixed(1)} ${(bottomY + 18).toFixed(1)}`);
+    branchTreeSvg.appendChild(arcPath);
+  }
+
+  const isLeftCol = gridRect ? (sourceRect.left < gridRect.left + gridRect.width * 0.45) : false;
+
+  // Draw organic circular arc curves & place cards
   positions.forEach((pos, i) => {
     const node = nodes[i];
     if (!node) return;
@@ -2201,11 +2754,18 @@ function renderPrimaryBranches(key, sourceElem) {
     const x1 = pos.x;
     const y1 = pos.y + cardH / 2; // Attach branch to vertical middle-left of card
 
-    // SVG Branch Path (Clean sharp white, no fuzzy glow)
-    const branchPath = createBranchPath(x0, y0, x1, y1, false);
+    // SVG Branch Path with collision-free perimeter routing
+    const branchPath = createBranchPath(x0, y0, x1, y1, false, {
+      key,
+      isLeftCol,
+      sourceRect,
+      gridRect,
+      targetIndex: i,
+      totalTargets: positions.length
+    });
     branchTreeSvg.appendChild(branchPath);
 
-    // Fork Dot at card attachment
+    // Fork Dot ring at card attachment
     const dot = createBranchDot(x1, y1, false);
     branchTreeSvg.appendChild(dot);
 
@@ -2243,9 +2803,11 @@ function renderPrimaryBranches(key, sourceElem) {
       ${detailText && detailText !== node.subtitle ? `<div class="card-detail">${escapeHtml(detailText)}</div>` : ''}
     `;
 
-    // Sub-branch interaction on primary node hover
+    // Sub-branch interaction and active line illumination on primary node hover
     card.addEventListener('mouseenter', () => {
       cancelBranchHide();
+      branchPath.classList.add('active');
+      dot.classList.add('active');
       if (node.subBranches && node.subBranches.length > 0) {
         renderSubBranches(card, node.subBranches, key);
       } else {
@@ -2254,6 +2816,8 @@ function renderPrimaryBranches(key, sourceElem) {
     });
 
     card.addEventListener('mouseleave', () => {
+      branchPath.classList.remove('active');
+      dot.classList.remove('active');
       // Small grace delay before removing sub-branch unless hovering into sub-branch
       subBranchHideTimeout = setTimeout(() => {
         if (!isCursorInSubBranches()) {
@@ -2343,10 +2907,14 @@ function renderSubBranches(parentCardElem, subList, key) {
 
     subCard.addEventListener('mouseenter', () => {
       cancelBranchHide();
+      subLine.classList.add('active');
+      subDot.classList.add('active');
       if (subBranchHideTimeout) clearTimeout(subBranchHideTimeout);
     });
 
     subCard.addEventListener('mouseleave', () => {
+      subLine.classList.remove('active');
+      subDot.classList.remove('active');
       scheduleBranchHide(240);
     });
 
@@ -2588,6 +3156,8 @@ function initBranchTreeSystem() {
       hideBranchTree();
     }
   };
+  const contentScrollWrap = document.getElementById('content-scroll-wrap');
+  if (contentScrollWrap) contentScrollWrap.addEventListener('scroll', onScrollHide, { passive: true });
   if (aestheticRoot) aestheticRoot.addEventListener('scroll', onScrollHide, { passive: true });
   window.addEventListener('scroll', onScrollHide, { passive: true });
 

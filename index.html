@@ -10,7 +10,7 @@
   <link
     href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap"
     rel="stylesheet">
-  <link rel="stylesheet" href="index.css?v=20260906_branch_v2">
+  <link rel="stylesheet" href="index.css?v=20260912_lyrics_offset_v9">
 </head>
 
 <body class="raw">
@@ -52,7 +52,8 @@
       <svg id="branch-tree-svg" class="branch-tree-svg" xmlns="http://www.w3.org/2000/svg"></svg>
       <div id="branch-nodes-container" class="branch-nodes-container"></div>
     </div>
-    <div class="content">
+    <div id="content-scroll-wrap" class="content-scroll-wrap">
+      <div class="content">
       <div class="left-col">
         <div class="hero">
           <h1>kunal1320k</h1>
@@ -73,11 +74,20 @@
           <!-- Dynamic Spotify Live Card -->
           <div class="spotify-card" id="spotify-card">
             <div class="spotify-card-top">
-              <div class="album-art-wrap" id="album-art-wrap">
+              <div class="album-art-wrap" id="album-art-wrap" title="Click to play / pause">
                 <img id="track-art" class="track-art"
                   src="https://mosaic.scdn.co/640/ab67616d00001e028324db1ae37be249aed887e7ab67616d00001e02b1f8da74f225fa1225cdfaceab67616d00001e02c8e97cafeb2acb85b21a777eab67616d00001e02ef694f8a1e178963cf25c2b5"
                   alt="Playlist artwork" loading="lazy">
                 <div class="vinyl-overlay" id="vinyl-overlay"></div>
+                <button class="album-art-play-btn" id="upper-play-btn" type="button" aria-label="Play or Pause" title="Play or Pause">
+                  <svg class="play-svg" viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+                    <polygon points="6 4 20 12 6 20 6 4"></polygon>
+                  </svg>
+                  <svg class="pause-svg" viewBox="0 0 24 24" width="20" height="20" fill="currentColor" style="display:none;">
+                    <rect x="5" y="4" width="4.5" height="16" rx="1.2"></rect>
+                    <rect x="14.5" y="4" width="4.5" height="16" rx="1.2"></rect>
+                  </svg>
+                </button>
               </div>
               <div class="track-details">
                 <div class="track-status-line offline">
@@ -135,10 +145,12 @@
 
               <!-- View 2: Spotify Playlist Embed -->
               <div class="media-view hidden" id="embed-view">
-                <iframe id="spotify-frame"
-                  src="https://open.spotify.com/embed/playlist/14d7SJJHjhwEerGgKaUa4J?utm_source=generator"
-                  allow="autoplay; encrypted-media; clipboard-write; fullscreen; picture-in-picture" loading="lazy"
-                  title="spotify"></iframe>
+                <div id="spotify-embed-slot">
+                  <iframe id="spotify-frame"
+                    src="https://open.spotify.com/embed/playlist/14d7SJJHjhwEerGgKaUa4J?utm_source=generator"
+                    allow="autoplay; encrypted-media; clipboard-write; fullscreen; picture-in-picture" loading="lazy"
+                    title="spotify"></iframe>
+                </div>
               </div>
             </div>
 
@@ -225,6 +237,7 @@
         </div>
       </div>
     </div>
+    </div>
   </div>
   <!-- Mobile Interactive Branch Modal / Drawer -->
   <div id="mobile-branch-modal" class="mobile-branch-modal" aria-hidden="true">
@@ -245,7 +258,9 @@
   <div id="wave-ring"></div>
   <audio id="theme-audio" src="./hey_there_delilah.mp3" loop preload="auto"></audio>
 
-  <script src="index.js?v=20260906_branch_v2"></script>
+  <!-- Spotify IFrame API for bidirectional playback sync and control -->
+  <script src="https://open.spotify.com/embed/iframe-api/v1" async></script>
+  <script src="index.js?v=20260912_lyrics_offset_v9"></script>
 </body>
 
 </html>
