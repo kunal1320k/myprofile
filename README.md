@@ -8,20 +8,16 @@ An interactive autumn-themed portfolio with retro terminal raw landing, dynamic 
 
 ## ✨ Features
 
-- **Real-Time Spotify Now Playing**:
+- **Real-Time Spotify & Synced Lyrics**:
   - Live animated equalizer soundwaves
   - Real-time progress bar synced with track duration
   - Album artwork, track title, artist, and direct Spotify link
-  - Dual integration support: **Lanyard (Discord Presence)** or **Direct Spotify API (Serverless)**
-  - Seamless fallback to your custom Autumn Playlist (`14d7SJJHjhwEerGgKaUa4J`) with embed toggle
+  - Real-time synced lyrics with automatic line tracking and offset advance
+  - Seamless fallback to custom curated playlists (`14d7SJJHjhwEerGgKaUa4J`) with embed toggle
 - **Autumn Experience**:
   - Procedural autumn tree canvas with floating, fluttering leaves
   - Ambient background theme music (`hey_there_delilah.mp3` — Plain White T's - Hey There Delilah) with mute/unmute control
   - High-performance responsive layouts for mobile and desktop
-
----
-
----
 
 ## 🚀 Local Development
 
