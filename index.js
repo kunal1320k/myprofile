@@ -68,7 +68,6 @@ const mediaPanelContainer = document.getElementById('media-panel-container');
 const lyricsView = document.getElementById('lyrics-view');
 const embedView = document.getElementById('embed-view');
 const lyricsScroll = document.getElementById('lyrics-scroll');
-const lyricsStatusBadge = document.getElementById('lyrics-status-badge');
 const rawSpotifyText = document.getElementById('raw-spotify-text');
 const albumArtWrap = document.getElementById('album-art-wrap');
 const upperPlayBtn = document.getElementById('upper-play-btn');
@@ -816,7 +815,6 @@ function renderSpotifyUI(state) {
         syncThemeAudioLyrics();
       } else {
         lyricsScroll.innerHTML = '<p class="lyric-line-placeholder">no track playing right now — start listening on spotify or yt music</p>';
-        if (lyricsStatusBadge) lyricsStatusBadge.textContent = "offline";
       }
     }
   }
@@ -953,7 +951,6 @@ function syncThemeAudioLyrics() {
     currentLyricsTrackKey = themeKey;
     currentLyrics = parseLRC(HEY_THERE_DELILAH_LRC);
     renderLyricsLines(currentLyrics);
-    if (lyricsStatusBadge) lyricsStatusBadge.textContent = "theme sync";
   }
   const currentMs = Math.max(0, (themeAudio.currentTime || 0) * 1000);
   syncActiveLyric(currentMs);
@@ -975,7 +972,6 @@ async function fetchSyncedLyrics(title, artist, durationMs) {
     currentLyricsTrackKey = trackKey;
     currentLyrics = cached.lyrics;
     renderLyricsLines(currentLyrics);
-    if (lyricsStatusBadge) lyricsStatusBadge.textContent = cached.type;
     syncActiveLyric(getLiveProgress(), true);
     return;
   }
@@ -988,7 +984,6 @@ async function fetchSyncedLyrics(title, artist, durationMs) {
       if (lyricsScroll) {
         lyricsScroll.innerHTML = '<p class="lyric-line-placeholder">no lyrics found for this track</p>';
       }
-      if (lyricsStatusBadge) lyricsStatusBadge.textContent = "no lyrics";
     }
     return;
   }
@@ -1001,7 +996,6 @@ async function fetchSyncedLyrics(title, artist, durationMs) {
   if (lyricsScroll) {
     lyricsScroll.innerHTML = '<p class="lyric-line-placeholder">searching for live lyrics...</p>';
   }
-  if (lyricsStatusBadge) lyricsStatusBadge.textContent = "fetching";
 
   // Robust cleaning for title to maximize LRCLIB match rate
   const cleanTitle = title
@@ -1110,26 +1104,22 @@ async function fetchSyncedLyrics(title, artist, durationMs) {
       currentLyrics = parseLRC(data.syncedLyrics);
       lyricsCache.set(trackKey, { lyrics: currentLyrics, type: "synced" });
       renderLyricsLines(currentLyrics);
-      if (lyricsStatusBadge) lyricsStatusBadge.textContent = "synced";
       syncActiveLyric(getLiveProgress(), true);
     } else if (data && data.plainLyrics) {
       currentLyrics = data.plainLyrics.split('\n').filter(t => t.trim()).map(t => ({ timeMs: 0, text: t.trim() }));
       lyricsCache.set(trackKey, { lyrics: currentLyrics, type: "plain text" });
       renderLyricsLines(currentLyrics);
-      if (lyricsStatusBadge) lyricsStatusBadge.textContent = "plain text";
     } else {
       lyricsNegativeCache.add(trackKey);
       if (lyricsScroll) {
         lyricsScroll.innerHTML = '<p class="lyric-line-placeholder">no lyrics found for this track</p>';
       }
-      if (lyricsStatusBadge) lyricsStatusBadge.textContent = "no lyrics";
     }
   } catch (err) {
     if (requestId !== currentLyricsRequestId) return;
     if (lyricsScroll) {
       lyricsScroll.innerHTML = '<p class="lyric-line-placeholder">lyrics temporarily unavailable</p>';
     }
-    if (lyricsStatusBadge) lyricsStatusBadge.textContent = "no lyrics";
   }
 }
 

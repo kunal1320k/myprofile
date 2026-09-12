@@ -985,16 +985,6 @@ body.aesthetic {
       color: #dfb282;
     }
 
-    .lyrics-status-badge {
-      font-family: "JetBrains Mono", monospace;
-      font-size: 9.5px;
-      text-transform: uppercase;
-      padding: 2px 7px;
-      border-radius: 999px;
-      background: rgba(29, 185, 84, 0.15);
-      border: 1px solid rgba(29, 185, 84, 0.35);
-      color: #1ed760;
-    }
 
     .lyrics-scroll {
       height: 160px;
