@@ -16,7 +16,6 @@ An interactive autumn-themed portfolio with retro terminal raw landing, dynamic 
   - Seamless fallback to custom curated playlists (`14d7SJJHjhwEerGgKaUa4J`) with embed toggle
 - **Autumn Experience**:
   - Procedural autumn tree canvas with floating, fluttering leaves
-  - Interactive beat-reactive leaves with dynamic fall velocities, rotation boost, and sway synced to the music spectrum
   - Ambient background theme music (`wave_to_earth_love.mp3` — wave to earth - love.) with mute/unmute control
   - High-performance responsive layouts for mobile and desktop
 
