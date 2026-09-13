@@ -16,7 +16,7 @@ An interactive autumn-themed portfolio with retro terminal raw landing, dynamic 
   - Seamless fallback to custom curated playlists (`14d7SJJHjhwEerGgKaUa4J`) with embed toggle
 - **Autumn Experience**:
   - Procedural autumn tree canvas with floating, fluttering leaves
-  - Ambient background theme music (`hey_there_delilah.mp3` — Plain White T's - Hey There Delilah) with mute/unmute control
+  - Ambient background theme music (`wave_to_earth_love.mp3` — wave to earth - love.) with mute/unmute control
   - High-performance responsive layouts for mobile and desktop
 
 ## 🚀 Local Development
