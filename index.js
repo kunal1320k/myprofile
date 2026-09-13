@@ -603,6 +603,9 @@ function drawLeaves(dt, t) {
   // Update audio beat energy from the song analyser
   updateBeat();
 
+  // 50% speed scaling for gentle, relaxed autumn floating
+  const leafDt = dt * 0.5;
+
   // Beat multipliers applied to leaf velocity and physics
   const beatBurst = beatEnergy;                          // 0..1, snappy transient
   const beatAmbient = beatSmooth;                        // 0..1, smooth ambient energy
@@ -619,14 +622,14 @@ function drawLeaves(dt, t) {
     const leafBeat = beatBurst * (0.7 + (i % 5) * 0.12);
     const leafAmbient = beatAmbient * (0.8 + (i % 3) * 0.1);
 
-    leaf.wobble += leaf.wobbleSpeed * dt * (1 + leafAmbient * 0.6);
-    leaf.vx += (wind * 0.0065 + Math.sin(leaf.wobble) * 0.007) * dt;
-    leaf.vx *= Math.pow(0.9965, dt);
-    leaf.x += (leaf.vx + Math.cos(leaf.wobble) * leaf.wobbleAmp * wobbleBoost * 0.46 + wind * 0.38) * dt;
-    // Beat directly accelerates falling velocity
-    leaf.y += leaf.vy * (0.7 + leaf.depth * 0.6) * speedBoost * dt;
-    // Beat increases rotation speed
-    leaf.rot += (leaf.rotSpeed * spinBoost + Math.sin(leaf.wobble * 0.6) * 0.006) * dt;
+    leaf.wobble += leaf.wobbleSpeed * leafDt * (1 + leafAmbient * 0.6);
+    leaf.vx += (wind * 0.0065 + Math.sin(leaf.wobble) * 0.007) * leafDt;
+    leaf.vx *= Math.pow(0.9965, leafDt);
+    leaf.x += (leaf.vx + Math.cos(leaf.wobble) * leaf.wobbleAmp * wobbleBoost * 0.46 + wind * 0.38) * leafDt;
+    // Beat directly accelerates falling velocity (at 50% speed)
+    leaf.y += leaf.vy * (0.7 + leaf.depth * 0.6) * speedBoost * leafDt;
+    // Beat increases rotation speed (at 50% speed)
+    leaf.rot += (leaf.rotSpeed * spinBoost + Math.sin(leaf.wobble * 0.6) * 0.006) * leafDt;
 
     if (leaf.y > H + 90) resetLeaf(leaf, false);
     if (leaf.x < -120) leaf.x = W + 80;
