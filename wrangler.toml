@@ -1,3 +1,10 @@
 name = "kunal-profile-services"
 main = "api/worker.js"
 compatibility_date = "2026-08-16"
+
+# Cloudflare KV for persistent cross-region online storage
+# Create a namespace with: npx wrangler kv:namespace create SONG_KV
+# Then uncomment and add the generated id:
+# [[kv_namespaces]]
+# binding = "SONG_KV"
+# id = "<your_kv_namespace_id>"

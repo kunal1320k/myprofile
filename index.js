@@ -69,12 +69,238 @@ const lyricsView = document.getElementById('lyrics-view');
 const embedView = document.getElementById('embed-view');
 const lyricsScroll = document.getElementById('lyrics-scroll');
 const rawSpotifyText = document.getElementById('raw-spotify-text');
-const albumArtWrap = document.getElementById('album-art-wrap');
-const upperPlayBtn = document.getElementById('upper-play-btn');
+const rawLastPlayedText = document.getElementById('raw-last-played-text');
+const rawHistoryDetails = document.getElementById('raw-history-details');
+const rawHistoryList = document.getElementById('raw-history-list');
 
-let revealed = false;
-let isMuted = false;
-let isRevealing = false;
+// ── ONLINE SONG STORAGE & HISTORY TRACKER ─────────────────────────────────
+const ONLINE_STORAGE_CONFIG = {
+  endpoint: "https://kunal-profile-services.kunalrana1320k.workers.dev/song",
+  lastFmEndpoint: `https://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&user=${encodeURIComponent(SPOTIFY_CONFIG.lastfm.username)}&api_key=${SPOTIFY_CONFIG.lastfm.apiKey}&format=json&limit=10`,
+  pollIntervalMs: 15000
+};
+
+const STORAGE_KEYS = {
+  LAST_PLAYED: 'kunal_last_played_song',
+  HISTORY: 'kunal_song_history'
+};
+
+function formatSongDateTime(dateInput) {
+  if (!dateInput) return "";
+  let d;
+  if (typeof dateInput === 'number') {
+    d = new Date(dateInput < 1e11 ? dateInput * 1000 : dateInput);
+  } else if (typeof dateInput === 'string') {
+    const num = Number(dateInput);
+    if (!isNaN(num) && num > 0) {
+      d = new Date(num < 1e11 ? num * 1000 : num);
+    } else {
+      d = new Date(dateInput);
+    }
+  } else if (dateInput instanceof Date) {
+    d = dateInput;
+  } else {
+    return "";
+  }
+  if (isNaN(d.getTime())) return "";
+
+  const datePart = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  const timePart = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+  return `${datePart}, ${timePart}`;
+}
+
+function getStoredSongHistory() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.HISTORY);
+    return raw ? JSON.parse(raw) : [];
+  } catch (_) {
+    return [];
+  }
+}
+
+function getStoredLastPlayed() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.LAST_PLAYED);
+    return raw ? JSON.parse(raw) : null;
+  } catch (_) {
+    return null;
+  }
+}
+
+function renderSongStorageUI(latestSong, isCurrentlyLive = false, historyItems = null) {
+  const song = latestSong || getStoredLastPlayed();
+  if (rawLastPlayedText) {
+    if (song && song.title && song.artist) {
+      if (isCurrentlyLive) {
+        rawLastPlayedText.textContent = `${song.title} — ${song.artist} (${song.dateTime || song.date_time || 'listening now'})`;
+      } else {
+        rawLastPlayedText.textContent = `${song.title} — ${song.artist} (${song.dateTime || song.date_time || ''})`;
+      }
+    } else {
+      rawLastPlayedText.textContent = "[ no history recorded yet ]";
+    }
+  }
+
+  if (rawHistoryList) {
+    const history = (Array.isArray(historyItems) && historyItems.length > 0) ? historyItems : getStoredSongHistory();
+    if (history.length > 0) {
+      rawHistoryList.innerHTML = history.map(item => `
+        <li>
+          <span style="font-weight:500;">${item.title}</span> — <span>${item.artist}</span>
+          <span style="opacity:0.6;margin-left:4px;font-size:12px;">(${item.dateTime || item.date_time || ''})</span>
+        </li>
+      `).join('');
+      if (rawHistoryDetails) rawHistoryDetails.style.display = "block";
+    } else {
+      if (rawHistoryDetails) rawHistoryDetails.style.display = "none";
+    }
+  }
+}
+
+// Save song to online storage (and local cache fallback)
+async function saveSongOnline(title, artist, timestamp, isCurrentlyLive = false) {
+  if (!title || !artist) return;
+  if (title.toLowerCase().includes("angrexxxxi") && artist.toLowerCase().includes("playlist")) return;
+
+  const cleanTitle = title.trim();
+  const cleanArtist = artist.trim();
+  const ts = typeof timestamp === 'number' ? (timestamp < 1e11 ? timestamp * 1000 : timestamp) : Date.now();
+  const formatted = formatSongDateTime(ts);
+
+  const songEntry = {
+    title: cleanTitle,
+    artist: cleanArtist,
+    timestamp: ts,
+    dateTime: formatted,
+    date_time: formatted,
+    is_playing: isCurrentlyLive
+  };
+
+  // Immediate UI update
+  renderSongStorageUI(songEntry, isCurrentlyLive);
+
+  // 1. Post to Cloudflare Worker online storage
+  try {
+    fetch(ONLINE_STORAGE_CONFIG.endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title: cleanTitle,
+        artist: cleanArtist,
+        timestamp: ts,
+        date_time: formatted,
+        is_playing: isCurrentlyLive
+      })
+    }).then(res => res.json()).then(data => {
+      if (data && data.history && Array.isArray(data.history)) {
+        renderSongStorageUI(songEntry, isCurrentlyLive, data.history);
+      }
+    }).catch(err => {
+      console.warn("Online storage Worker POST warning:", err);
+    });
+  } catch (err) {
+    console.warn("Online storage POST error:", err);
+  }
+
+  // 2. Local cache fallback
+  try {
+    localStorage.setItem(STORAGE_KEYS.LAST_PLAYED, JSON.stringify(songEntry));
+    let history = getStoredSongHistory();
+    history = history.filter(item => !(item.title.toLowerCase() === cleanTitle.toLowerCase() && item.artist.toLowerCase() === cleanArtist.toLowerCase()));
+    history.unshift(songEntry);
+    if (history.length > 10) history = history.slice(0, 10);
+    localStorage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify(history));
+  } catch (_) {}
+}
+
+// Fetch from online storage
+async function fetchOnlineSongHistory() {
+  try {
+    // 1. Try Cloudflare Worker online endpoint
+    const res = await fetch(`${ONLINE_STORAGE_CONFIG.endpoint}?_=${Date.now()}`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.title && data.artist) {
+        const onlineSong = {
+          title: data.title,
+          artist: data.artist,
+          timestamp: data.timestamp || Date.now(),
+          dateTime: data.date_time || formatSongDateTime(data.timestamp),
+          date_time: data.date_time || formatSongDateTime(data.timestamp)
+        };
+        const onlineHistory = Array.isArray(data.history) ? data.history.map(h => ({
+          ...h,
+          dateTime: h.date_time || h.dateTime || formatSongDateTime(h.timestamp)
+        })) : [];
+
+        renderSongStorageUI(onlineSong, Boolean(data.is_playing), onlineHistory);
+
+        // Update local cache
+        try {
+          localStorage.setItem(STORAGE_KEYS.LAST_PLAYED, JSON.stringify(onlineSong));
+          if (onlineHistory.length > 0) {
+            localStorage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify(onlineHistory));
+          }
+        } catch (_) {}
+        return;
+      }
+    }
+  } catch (err) {
+    console.warn("Worker online storage fetch error, falling back to Last.fm cloud:", err);
+  }
+
+  // 2. Fallback to Last.fm 24/7 Cloud Tracker directly
+  try {
+    const res = await fetch(`${ONLINE_STORAGE_CONFIG.lastFmEndpoint}&_=${Date.now()}`);
+    if (!res.ok) return;
+    const data = await res.json();
+    if (data && data.recenttracks && data.recenttracks.track) {
+      const tracks = Array.isArray(data.recenttracks.track) ? data.recenttracks.track : [data.recenttracks.track];
+      if (tracks.length === 0) return;
+
+      const history = [];
+      let liveSong = null;
+
+      tracks.forEach((tr) => {
+        const title = tr.name;
+        const artist = (tr.artist && (tr.artist['#text'] || tr.artist.name)) || "";
+        if (!title || !artist) return;
+        if (title.toLowerCase().includes("angrexxxxi") && artist.toLowerCase().includes("playlist")) return;
+
+        let ts = Date.now();
+        if (tr.date && tr.date.uts) {
+          ts = parseInt(tr.date.uts, 10) * 1000;
+        }
+
+        const isLive = Boolean(tr['@attr'] && tr['@attr'].nowplaying === "true");
+        const entry = {
+          title: title.trim(),
+          artist: artist.trim(),
+          timestamp: ts,
+          dateTime: formatSongDateTime(ts),
+          date_time: formatSongDateTime(ts),
+          is_playing: isLive
+        };
+
+        if (isLive && !liveSong) {
+          liveSong = entry;
+        }
+        history.push(entry);
+      });
+
+      const top = liveSong || history[0];
+      if (top) {
+        renderSongStorageUI(top, Boolean(top.is_playing), history);
+        try {
+          localStorage.setItem(STORAGE_KEYS.LAST_PLAYED, JSON.stringify(top));
+          localStorage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify(history.slice(0, 10)));
+        } catch (_) {}
+      }
+    }
+  } catch (e) {
+    console.warn("Last.fm online cloud fetch error:", e);
+  }
+}
 
 // ── SEEDED RANDOM GENERATOR FOR TREE RESIZING ──────────────────────────────
 let randomSource = Math.random;
@@ -775,6 +1001,7 @@ function renderSpotifyUI(state) {
     }
     if (equalizer) equalizer.classList.add("active");
     if (rawSpotifyText) rawSpotifyText.textContent = `${state.title} — ${state.artist}`;
+    saveSongOnline(state.title, state.artist, Date.now(), true);
 
     // Fetch live lyrics for currently playing track
     if (state.title) {
@@ -809,6 +1036,7 @@ function renderSpotifyUI(state) {
     if (statusDot && statusDot.parentElement) statusDot.parentElement.className = "track-status-line offline";
     if (equalizer) equalizer.classList.remove("active");
     if (rawSpotifyText) rawSpotifyText.textContent = "[ playing nothing ]";
+    renderSongStorageUI(null, false);
 
     if (lyricsScroll) {
       if (themeAudio && !themeAudio.paused && themeAudio.currentTime > 0) {
@@ -937,7 +1165,11 @@ function syncThemeAudioLyrics() {
 
 async function fetchSyncedLyrics(title, artist, durationMs) {
   if (!title) return;
-  const trackKey = `${title}_${artist}`.toLowerCase();
+  saveSongOnline(title, artist, Date.now(), true);
+        if (tracks.length > 1) {
+          syncLastFmHistory(tracks.slice(1));
+        }
+        const trackKey = `${title}_${artist}`.toLowerCase();
   
   // If we already have loaded lyrics for this track, re-sync immediately
   if (currentLyricsTrackKey === trackKey && currentLyrics.length > 0) {
@@ -1482,6 +1714,7 @@ function onSpotifyEmbedEvent(data) {
   const positionMs = typeof data.position === 'number' ? data.position : 0;
 
   if (isPlaying) {
+    saveSongOnline(title, artist, Date.now(), true);
     if (themeAudio && !themeAudio.paused) {
       themeAudio.pause();
     }
@@ -1626,7 +1859,7 @@ async function fetchLastFmNowPlaying() {
   if (isSpotifyEmbedPlaying) return;
   if (!SPOTIFY_CONFIG.lastfm || !SPOTIFY_CONFIG.lastfm.username || !SPOTIFY_CONFIG.lastfm.apiKey) return;
   try {
-    const url = `https://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&user=${encodeURIComponent(SPOTIFY_CONFIG.lastfm.username)}&api_key=${SPOTIFY_CONFIG.lastfm.apiKey}&format=json&limit=1&_=${Date.now()}`;
+    const url = `https://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&user=${encodeURIComponent(SPOTIFY_CONFIG.lastfm.username)}&api_key=${SPOTIFY_CONFIG.lastfm.apiKey}&format=json&limit=6&_=${Date.now()}`;
     const res = await fetch(url);
     if (!res.ok) return;
     const data = await res.json();
@@ -1708,6 +1941,22 @@ async function fetchLastFmNowPlaying() {
 
     lastFmNowPlayingActive = false;
 
+    if (currentTrack) {
+      const title = currentTrack.name || "Unknown Track";
+      const artist = (currentTrack.artist && (currentTrack.artist['#text'] || currentTrack.artist.name)) || "Unknown Artist";
+      let trackTime = Date.now();
+      if (currentTrack.date && currentTrack.date.uts) {
+        trackTime = parseInt(currentTrack.date.uts, 10) * 1000;
+      }
+      const stored = getStoredLastPlayed();
+      if (!stored || !stored.timestamp || trackTime >= stored.timestamp) {
+        saveSongOnline(title, artist, trackTime, false);
+      } else {
+        renderSongStorageUI(stored, false);
+      }
+      syncLastFmHistory(tracks);
+    }
+
     // If Last.fm is not playing and Lanyard socket is not reporting a live song
     if (currentPlaybackState.isPlaying && !lanyardSocketActive && (Date.now() - lastFmLastSeenPlaying > 15000)) {
       currentPlaybackState = {
@@ -1762,6 +2011,9 @@ fetchLastFmNowPlaying();
 setInterval(fetchLastFmNowPlaying, SPOTIFY_CONFIG.lastfm.pollIntervalMs);
 connectLanyard();
 renderSpotifyUI(currentPlaybackState);
+renderSongStorageUI();
+fetchOnlineSongHistory();
+setInterval(fetchOnlineSongHistory, ONLINE_STORAGE_CONFIG.pollIntervalMs);
 
 // DROP - FIXED: circle MUST originate from button center
 function getDropCenter() {
@@ -1789,6 +2041,7 @@ function doDrop(e) {
   if (contentScrollWrap) contentScrollWrap.scrollTop = 0;
 
   const playPromise = themeAudio.play();
+  saveSongOnline("love", "wave to earth", Date.now(), true);
 
   if (playPromise && typeof playPromise.then === 'function') {
     playPromise.then(() => {
@@ -1897,1247 +2150,3 @@ dropBtn.addEventListener('touchstart', (e) => { e.stopPropagation(); }, { passiv
 addEventListener('keydown', (e) => { if (e.key === 'Enter' && !revealed) doDrop() });
 
 // prevent scroll jank on mobile - ensure aesthetic scrollable after reveal
-
-// ══════════════════════════════════════════════════════════════════════════════
-// ── INTERACTIVE ORGANIC TREE BRANCHING SYSTEM ────────────────────────────────
-// ══════════════════════════════════════════════════════════════════════════════
-
-const branchTreeOverlay = document.getElementById('branch-tree-overlay');
-const branchTreeSvg = document.getElementById('branch-tree-svg');
-const branchNodesContainer = document.getElementById('branch-nodes-container');
-const mobileBranchModal = document.getElementById('mobile-branch-modal');
-const mobileBranchBackdrop = document.getElementById('mobile-branch-backdrop');
-const mobileBranchClose = document.getElementById('mobile-branch-close');
-const mobileBranchTitle = document.getElementById('mobile-branch-title');
-const mobileBranchBadge = document.getElementById('mobile-branch-badge');
-const mobileBranchContent = document.getElementById('mobile-branch-content');
-
-// ── RICH BRANCH DATASET WITH KUNAL1320K REAL DATA ─────────────────────────
-const BRANCH_DATA = {
-  spotify: {
-    title: "Spotify Playlists",
-    badge: "Music",
-    icon: `<svg viewBox="0 0 24 24" width="16" height="16" fill="#1ed760"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/></svg>`,
-    profileUrl: "https://open.spotify.com/user/kunal1320k",
-    nodes: [
-      {
-        id: "sp-14d7SJJHjhwEerGgKaUa4J",
-        title: "angrexxxxi 🥟",
-        subtitle: "kunal1320k • 100 songs",
-        tag: "Playlist",
-        url: "https://open.spotify.com/playlist/14d7SJJHjhwEerGgKaUa4J",
-        subBranches: [
-          { title: "Every Breath You Take", artist: "The Police", duration: "4:13", url: "https://open.spotify.com/track/1JSTJqkT5qHq8MDJnJbRE1" },
-          { title: "Cry", artist: "Cigarettes After Sex", duration: "4:16", url: "https://open.spotify.com/track/7mDTvYD2ieE4Q28XFziMfJ" },
-          { title: "Fluorescent Adolescent", artist: "Arctic Monkeys", duration: "3:03", url: "https://open.spotify.com/track/2x8evxqUlF0eRabbW2JBJd" },
-          { title: "Ride It", artist: "Jay Sean", duration: "3:10", url: "https://open.spotify.com/track/2YSrlOiR9kyiqUURfYwDXI" },
-          { title: "This Side of Paradise", artist: "Coyote Theory", duration: "4:02", url: "https://open.spotify.com/track/79EkGysjP2dL5GdpeQjRxT" },
-          { title: "Pluto Projector", artist: "Rex Orange County", duration: "4:27", url: "https://open.spotify.com/track/4EWBhKf1fOFnyMtUzACXEc" },
-          { title: "Fly Me to the Moon", artist: "The Macarons Project", duration: "2:35", url: "https://open.spotify.com/track/0flo3KqhjkcuoB1G6Mhq7s" },
-          { title: "Glue Song", artist: "beabadoobee", duration: "2:15", url: "https://open.spotify.com/track/3iBgrkexCzVuPy4O9vx7Mf" },
-          { title: "Atlantis", artist: "Seafret", duration: "3:49", url: "https://open.spotify.com/track/1Fid2jjqsHViMX6xNH70hE" },
-          { title: "Heather", artist: "Conan Gray", duration: "3:18", url: "https://open.spotify.com/track/4xqrdfXkTW4T0RauPLv3WA" },
-          { title: "Young Girl A", artist: "Siinamota", duration: "3:41", url: "https://open.spotify.com/track/5sPKAEb7afrIMtdqEnI6H6" },
-          { title: "Line Without a Hook", artist: "Ricky Montgomery", duration: "4:09", url: "https://open.spotify.com/track/5NvOZCjZaGGGL597exlQWv" }
-        ]
-      },
-      {
-        id: "sp-1gHCUJSMJrMT4pClvoFcoV",
-        title: "Unheard",
-        subtitle: "kunal1320k • 10 songs",
-        tag: "Playlist",
-        url: "https://open.spotify.com/playlist/1gHCUJSMJrMT4pClvoFcoV",
-        subBranches: [
-          { title: "Don't You Want Me", artist: "The Human League", duration: "3:56", url: "https://open.spotify.com/track/3L7RtEcu1Hw3OXrpnthngx" },
-          { title: "I Wanna Dance with Somebody", artist: "Whitney Houston", duration: "4:52", url: "https://open.spotify.com/track/2tUBqZG2AbRi7Q0BIrVrEj" },
-          { title: "Scar Tissue", artist: "Red Hot Chili Peppers", duration: "3:35", url: "https://open.spotify.com/track/1G391cbiT3v3Cywg8T7DM1" },
-          { title: "Come Back to Me", artist: "David Cook", duration: "4:08", url: "https://open.spotify.com/track/55r33uTqnLglVMHb1qeWOd" },
-          { title: "Always Be My Baby", artist: "Mariah Carey", duration: "4:18", url: "https://open.spotify.com/track/2aBxt229cbLDOvtL7Xbb9x" },
-          { title: "Dekho Na", artist: "Sobit Tamang", duration: "3:47", url: "https://open.spotify.com/track/1tBFMrlbCnJIglzG9xroRp" },
-          { title: "Magnolia", artist: "Magnolia Celebration", duration: "4:16", url: "https://open.spotify.com/track/3JkDuxcnIzBUngCk6peKZi" },
-          { title: "Like You (feat. Ciara)", artist: "Bow Wow, Ciara", duration: "3:25", url: "https://open.spotify.com/track/3jEqrIfwKO0M8ALu3TGilF" },
-          { title: "Kiss Me", artist: "Sixpence None The Richer", duration: "3:28", url: "https://open.spotify.com/track/754kgU5rWscRTfvlsuEwFp" },
-          { title: "Heaven", artist: "Bryan Adams", duration: "4:03", url: "https://open.spotify.com/track/7Ewz6bJ97vUqk5HdkvguFQ" }
-        ]
-      },
-      {
-        id: "sp-profile",
-        title: "Spotify Profile",
-        subtitle: "kunal1320k • View on Spotify",
-        tag: "Profile",
-        url: "https://open.spotify.com/user/kunal1320k",
-        subBranches: [
-          { title: "angrexxxxi 🥟", artist: "100 songs • kunal1320k", duration: "Open ↗", url: "https://open.spotify.com/playlist/14d7SJJHjhwEerGgKaUa4J" },
-          { title: "Unheard", artist: "10 songs • kunal1320k", duration: "Open ↗", url: "https://open.spotify.com/playlist/1gHCUJSMJrMT4pClvoFcoV" },
-          { title: "kunal1320k Profile", artist: "Spotify Web Player", duration: "Profile ↗", url: "https://open.spotify.com/user/kunal1320k" }
-        ]
-      }
-    ]
-  },
-  github: {
-    title: "GitHub Repositories",
-    badge: "Code",
-    icon: `<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>`,
-    profileUrl: "https://github.com/kunal1320k",
-    nodes: [
-      {
-        id: "gh-spotifytoytmusic",
-        title: "SpotifytoYTMusicSync",
-        subtitle: "Transfer/sync Spotify playlists to ytm. Auto/manual playlists.",
-        tag: "Python • ★ 13",
-        url: "https://github.com/kunal1320k/SpotifytoYTMusicSync",
-        subBranches: [
-          { title: "★ 13 Stars • 1 Fork", artist: "Language: Python", duration: "Public", url: "https://github.com/kunal1320k/SpotifytoYTMusicSync" },
-          { title: "High Accuracy Sync", artist: "Spotify to YouTube Music transfer", duration: "Repo ↗", url: "https://github.com/kunal1320k/SpotifytoYTMusicSync" },
-          { title: "View on GitHub", artist: "Browse source code", duration: "github.com", url: "https://github.com/kunal1320k/SpotifytoYTMusicSync" }
-        ]
-      },
-      {
-        id: "gh-chemocr",
-        title: "ChemOCR",
-        subtitle: "Lite model OCR for chemical structures to standard formats",
-        tag: "Python • ★ 2",
-        url: "https://github.com/kunal1320k/ChemOCR",
-        subBranches: [
-          { title: "★ 2 Stars", artist: "Chemical Structure OCR", duration: "Python", url: "https://github.com/kunal1320k/ChemOCR" },
-          { title: "Structure Formats", artist: "Export for computational chemistry", duration: "Repo ↗", url: "https://github.com/kunal1320k/ChemOCR" }
-        ]
-      },
-      {
-        id: "gh-exeiconchanger",
-        title: "ExeIconChanger",
-        subtitle: "C++ tool to change EXE icons with bicubic interpolation resizing",
-        tag: "C++",
-        url: "https://github.com/kunal1320k/ExeIconChanger",
-        subBranches: [
-          { title: "Bicubic Interpolation", artist: "High-performance smart resizing", duration: "C++", url: "https://github.com/kunal1320k/ExeIconChanger" },
-          { title: "Auto Image-to-Icon", artist: "Direct PE header icon rewrite", duration: "Repo ↗", url: "https://github.com/kunal1320k/ExeIconChanger" }
-        ]
-      },
-      {
-        id: "gh-oneclicksort",
-        title: "OneClickSort",
-        subtitle: "Automatically move files into folders according to their file type",
-        tag: "PowerShell",
-        url: "https://github.com/kunal1320k/OneClickSort",
-        subBranches: [
-          { title: "Automated File Sorting", artist: "Organize files by extension", duration: "PowerShell", url: "https://github.com/kunal1320k/OneClickSort" },
-          { title: "One-Click Execution", artist: "Clean up downloads & folders", duration: "Repo ↗", url: "https://github.com/kunal1320k/OneClickSort" }
-        ]
-      },
-      {
-        id: "gh-proxyswitcher",
-        title: "Proxy-Switcher-Powershell",
-        subtitle: "PowerShell script simplifying Windows proxy management",
-        tag: "PowerShell",
-        url: "https://github.com/kunal1320k/Proxy-Switcher-Powershell",
-        subBranches: [
-          { title: "Windows Proxy Manager", artist: "Fast network toggle script", duration: "PowerShell", url: "https://github.com/kunal1320k/Proxy-Switcher-Powershell" }
-        ]
-      },
-      {
-        id: "gh-myprofile",
-        title: "myprofile",
-        subtitle: "halo — Autumn aesthetic profile with live Spotify sync",
-        tag: "JavaScript",
-        url: "https://github.com/kunal1320k/myprofile",
-        subBranches: [
-          { title: "Interactive Canvas & Tree", artist: "Full personal portfolio", duration: "JavaScript", url: "https://github.com/kunal1320k/myprofile" },
-          { title: "Commits & Updates", artist: "Live synced features", duration: "GitHub", url: "https://github.com/kunal1320k/myprofile/commits/main" }
-        ]
-      },
-      {
-        id: "gh-telegramuploader",
-        title: "basic-telegram-file-uploader",
-        subtitle: "Upload files from any drive location directly to telegram channel",
-        tag: "Python",
-        url: "https://github.com/kunal1320k/basic-telegram-file-uploader",
-        subBranches: [
-          { title: "Telegram Channel Bot", artist: "Drive to Telegram upload automation", duration: "Python", url: "https://github.com/kunal1320k/basic-telegram-file-uploader" }
-        ]
-      }
-    ]
-  },
-  youtube: {
-    title: "YouTube Channel",
-    badge: "Video",
-    icon: `<svg viewBox="0 0 24 24" width="16" height="16" fill="#ff0033"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>`,
-    profileUrl: "https://www.youtube.com/@kunal1320k",
-    nodes: [
-      {
-        id: "yt-channel",
-        title: "YouTube Channel",
-        subtitle: "@kunal1320k",
-        tag: "Channel",
-        url: "https://www.youtube.com/@kunal1320k",
-        subBranches: [
-          { title: "Visit @kunal1320k", artist: "Official YouTube Channel", duration: "Open ↗", url: "https://www.youtube.com/@kunal1320k" },
-          { title: "Channel Playlists", artist: "Saved & Created Playlists", duration: "Playlists ↗", url: "https://www.youtube.com/@kunal1320k/playlists" }
-        ]
-      },
-      {
-        id: "yt-playlists",
-        title: "Playlists & Music",
-        subtitle: "kunal1320k Playlists",
-        tag: "Playlists",
-        url: "https://www.youtube.com/@kunal1320k/playlists",
-        subBranches: [
-          { title: "View All Playlists", artist: "@kunal1320k Playlists", duration: "YouTube", url: "https://www.youtube.com/@kunal1320k/playlists" }
-        ]
-      }
-    ]
-  },
-  myanimelist: {
-    title: "MyAnimeList",
-    badge: "Anime",
-    icon: `<svg viewBox="0 0 24 24" width="16" height="16" fill="#2e51a2"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 14.5h-2v-2h2v2zm0-4h-2V7h2v5.5z"/></svg>`,
-    profileUrl: "https://myanimelist.net/profile/kunal1320k",
-    nodes: [
-      {
-        id: "mal-frieren",
-        title: "Sousou no Frieren",
-        subtitle: "Score: ★ 10/10 • 28/28 eps",
-        tag: "Completed",
-        url: "https://myanimelist.net/anime/52991/Sousou_no_Frieren",
-        subBranches: [
-          { title: "Score: 10/10 (Masterpiece)", artist: "Watched: 28/28 episodes", duration: "Completed", url: "https://myanimelist.net/anime/52991" },
-          { title: "Rank #1 on MAL", artist: "Adventure, Drama, Fantasy", duration: "MAL ↗", url: "https://myanimelist.net/anime/52991" }
-        ]
-      },
-      {
-        id: "mal-aot",
-        title: "Shingeki no Kyojin",
-        subtitle: "Score: ★ 10/10 • 25/25 eps",
-        tag: "Completed",
-        url: "https://myanimelist.net/anime/16498/Shingeki_no_Kyojin",
-        subBranches: [
-          { title: "Score: 10/10 (Masterpiece)", artist: "Watched: 25/25 episodes", duration: "Completed", url: "https://myanimelist.net/anime/16498" },
-          { title: "Attack on Titan", artist: "Action, Mystery, Drama", duration: "MAL ↗", url: "https://myanimelist.net/anime/16498" }
-        ]
-      },
-      {
-        id: "mal-aots3p2",
-        title: "Shingeki no Kyojin S3 Part 2",
-        subtitle: "Score: ★ 10/10 • 10/10 eps",
-        tag: "Completed",
-        url: "https://myanimelist.net/anime/38524/Shingeki_no_Kyojin_Season_3_Part_2",
-        subBranches: [
-          { title: "Score: 10/10 (Masterpiece)", artist: "Watched: 10/10 episodes", duration: "Completed", url: "https://myanimelist.net/anime/38524" },
-          { title: "Wit Studio", artist: "Action, Suspense", duration: "MAL ↗", url: "https://myanimelist.net/anime/38524" }
-        ]
-      },
-      {
-        id: "mal-steinsgate",
-        title: "Steins;Gate",
-        subtitle: "Score: ★ 9/10 • 24/24 eps",
-        tag: "Completed",
-        url: "https://myanimelist.net/anime/9253/Steins_Gate",
-        subBranches: [
-          { title: "Score: 9/10 (Great)", artist: "Watched: 24/24 episodes", duration: "Completed", url: "https://myanimelist.net/anime/9253" },
-          { title: "White Fox Animation", artist: "Sci-Fi, Psychological, Suspense", duration: "MAL ↗", url: "https://myanimelist.net/anime/9253" }
-        ]
-      },
-      {
-        id: "mal-eva",
-        title: "Shinseiki Evangelion",
-        subtitle: "Score: ★ 9/10 • 26/26 eps",
-        tag: "Completed",
-        url: "https://myanimelist.net/anime/30/Shinseiki_Evangelion",
-        subBranches: [
-          { title: "Score: 9/10 (Great)", artist: "Watched: 26/26 episodes", duration: "Completed", url: "https://myanimelist.net/anime/30" },
-          { title: "Neon Genesis Evangelion", artist: "Mecha, Psychological, Drama", duration: "MAL ↗", url: "https://myanimelist.net/anime/30" }
-        ]
-      },
-      {
-        id: "mal-violet",
-        title: "Violet Evergarden",
-        subtitle: "Score: ★ 8/10 • 13/13 eps",
-        tag: "Completed",
-        url: "https://myanimelist.net/anime/33352/Violet_Evergarden",
-        subBranches: [
-          { title: "Score: 8/10 (Very Good)", artist: "Watched: 13/13 episodes", duration: "Completed", url: "https://myanimelist.net/anime/33352" },
-          { title: "Kyoto Animation", artist: "Drama, Fantasy", duration: "MAL ↗", url: "https://myanimelist.net/anime/33352" }
-        ]
-      },
-      {
-        id: "mal-oshinoko",
-        title: "[Oshi no Ko]",
-        subtitle: "Score: ★ 7/10 • 11/11 eps",
-        tag: "Completed",
-        url: "https://myanimelist.net/anime/52034/Oshi_no_Ko",
-        subBranches: [
-          { title: "Score: 7/10 (Good)", artist: "Watched: 11/11 episodes", duration: "Completed", url: "https://myanimelist.net/anime/52034" },
-          { title: "Doga Kobo", artist: "Drama, Supernatural", duration: "MAL ↗", url: "https://myanimelist.net/anime/52034" }
-        ]
-      }
-    ]
-  },
-  reddit: {
-    title: "Reddit",
-    badge: "Reddit",
-    icon: `<svg viewBox="0 0 24 24" width="16" height="16" fill="#ff4500"><path d="M12 0C5.373 0 0 5.373 0 12c0 3.314 1.343 6.314 3.515 8.485l-1.222 3.666 3.844-1.127C7.943 23.633 9.897 24 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm5.01 13c-.643 0-1.165-.521-1.165-1.165s.522-1.165 1.165-1.165c.644 0 1.165.521 1.165 1.165S17.654 13 17.01 13zm-10.02 0c-.643 0-1.165-.521-1.165-1.165s.522-1.165 1.165-1.165c.644 0 1.165.521 1.165 1.165S7.634 13 6.99 13zm8.385 3.328c-.856.856-2.222.92-3.375.92s-2.519-.064-3.375-.92c-.228-.228-.228-.598 0-.826.228-.228.598-.228.826 0 .616.616 1.713.682 2.549.682s1.933-.066 2.549-.682c.228-.228.598-.228.826 0 .228.228.228.598 0 .826z"/></svg>`,
-    profileUrl: "https://www.reddit.com/user/Juicy-Jam-987/",
-    nodes: [
-      {
-        id: "rd-profile",
-        title: "u/Juicy-Jam-987",
-        subtitle: "Reddit User Profile",
-        tag: "User",
-        url: "https://www.reddit.com/user/Juicy-Jam-987/",
-        subBranches: [
-          { title: "View Profile", artist: "u/Juicy-Jam-987", duration: "Reddit ↗", url: "https://www.reddit.com/user/Juicy-Jam-987/" },
-          { title: "Submitted Posts", artist: "Reddit Submissions", duration: "Reddit ↗", url: "https://www.reddit.com/user/Juicy-Jam-987/submitted/" }
-        ]
-      }
-    ]
-  },
-  steam: {
-    title: "Steam Profile",
-    badge: "Gaming",
-    icon: `<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M11.979 0C5.678 0 .511 4.86.022 11.037l6.432 2.658c.545-.371 1.203-.59 1.912-.59.063 0 .125.004.188.008l2.861-4.142V8.91c0-2.495 2.028-4.524 4.524-4.524 2.494 0 4.524 2.029 4.524 4.524s-2.03 4.524-4.524 4.524h-.105l-4.076 2.911c0 .052.005.105.005.159 0 1.875-1.515 3.396-3.39 3.396-1.635 0-3.016-1.155-3.331-2.693L.437 14.8C1.849 20.084 6.641 24 12.333 24c6.627 0 12-5.373 12-12S18.606 0 11.979 0z"/></svg>`,
-    profileUrl: "https://steamcommunity.com/id/kunal1320k/",
-    nodes: [
-      {
-        id: "st-profile",
-        title: "kunal1320k",
-        subtitle: "Level 4 • Steam Community Profile",
-        tag: "Steam",
-        url: "https://steamcommunity.com/id/kunal1320k/",
-        subBranches: [
-          { title: "Steam Profile", artist: "Level 4 • kunal1320k", duration: "Steam ↗", url: "https://steamcommunity.com/id/kunal1320k/" },
-          { title: "Games & Badges", artist: "Community Activity", duration: "Steam ↗", url: "https://steamcommunity.com/id/kunal1320k/games/?tab=all" }
-        ]
-      }
-    ]
-  },
-  telegram: {
-    title: "Telegram Contact",
-    badge: "Chat",
-    icon: `<svg viewBox="0 0 24 24" width="16" height="16" fill="#229ed9"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.161c-.18.895-1.125 5.09-1.6 7.275-.201.923-.591 1.233-.967 1.264-.817.067-1.439-.54-2.23-1.058-1.238-.81-1.938-1.315-3.138-2.107-1.387-.915-.488-1.418.303-2.24.207-.215 3.805-3.488 3.875-3.787.009-.037.017-.178-.066-.252-.083-.074-.206-.049-.294-.029-.126.029-2.133 1.356-6.02 3.98-.569.391-1.085.582-1.547.572-.51-.011-1.49-.288-2.22-.525-.895-.292-1.607-.446-1.545-.941.032-.258.388-.522 1.067-.794 4.184-1.822 6.976-3.024 8.375-3.606 3.996-1.662 4.827-1.95 5.368-1.96.119-.002.385.028.558.168.146.118.186.277.205.389.019.112.043.364.024.564z"/></svg>`,
-    profileUrl: "https://t.me/kunal1320k",
-    nodes: [
-      {
-        id: "tg-direct",
-        title: "@kunal1320k",
-        subtitle: "Direct messaging & contact",
-        tag: "Telegram",
-        url: "https://t.me/kunal1320k",
-        subBranches: [
-          { title: "Chat on Telegram", artist: "@kunal1320k", duration: "Direct ↗", url: "https://t.me/kunal1320k" }
-        ]
-      }
-    ]
-  }
-};
-
-// ── LIVE DYNAMIC UPDATES (GITHUB API + LOCAL DATA FILES) ────────────────────
-async function syncRealDataSources() {
-  // 1. Sync from local data files if present (data/myanimelist.json, data/spotify.json, data/github.json)
-  try {
-    const malRes = await fetch('data/myanimelist.json');
-    if (malRes.ok) {
-      const malJson = await malRes.json();
-      if (malJson.anime && Array.isArray(malJson.anime) && malJson.anime.length > 0) {
-        BRANCH_DATA.myanimelist.nodes = malJson.anime.slice(0, 8).map(a => ({
-          id: `mal-${a.id}`,
-          title: a.title,
-          subtitle: a.subtitle || `Score: ${a.score}/10`,
-          tag: a.status || "Completed",
-          url: a.url,
-          subBranches: [
-            { title: `Score: ${a.score}/10`, artist: `Episodes: ${a.watched_episodes}/${a.total_episodes}`, duration: a.status || "MAL", url: a.url },
-            { title: "View on MyAnimeList", artist: a.title, duration: "MAL ↗", url: a.url }
-          ]
-        }));
-      }
-    }
-  } catch (_) {}
-
-  try {
-    const spRes = await fetch('data/spotify.json');
-    if (spRes.ok) {
-      const spJson = await spRes.json();
-      if (spJson.playlists && Array.isArray(spJson.playlists) && spJson.playlists.length > 0) {
-        BRANCH_DATA.spotify.nodes = spJson.playlists.map(p => ({
-          id: `sp-${p.id}`,
-          title: p.title,
-          subtitle: `kunal1320k • ${p.trackCount || (p.songs ? p.songs.length : 0)} songs`,
-          tag: "Playlist",
-          url: p.url,
-          subBranches: (p.songs || []).map(s => ({
-            title: s.title,
-            artist: s.artist,
-            duration: s.duration || "play ↗",
-            url: s.url
-          }))
-        }));
-        BRANCH_DATA.spotify.nodes.push({
-          id: "sp-profile",
-          title: "Spotify Profile",
-          subtitle: "kunal1320k • View on Spotify",
-          tag: "Profile",
-          url: "https://open.spotify.com/user/kunal1320k",
-          subBranches: [
-            { title: "angrexxxxi 🥟", artist: "100 songs • kunal1320k", duration: "Open ↗", url: "https://open.spotify.com/playlist/14d7SJJHjhwEerGgKaUa4J" },
-            { title: "Unheard", artist: "10 songs • kunal1320k", duration: "Open ↗", url: "https://open.spotify.com/playlist/1gHCUJSMJrMT4pClvoFcoV" },
-            { title: "kunal1320k Profile", artist: "Spotify Web Player", duration: "Profile ↗", url: "https://open.spotify.com/user/kunal1320k" }
-          ]
-        });
-      }
-    }
-  } catch (_) {}
-
-  // 2. Load local github.json and youtube.json
-  try {
-    const ghRes = await fetch('data/github.json');
-    if (ghRes.ok) {
-      const ghJson = await ghRes.json();
-      if (ghJson.repositories && Array.isArray(ghJson.repositories) && ghJson.repositories.length > 0) {
-        applyGitHubReposToBranch(ghJson.repositories);
-      }
-    }
-  } catch (_) {}
-
-  try {
-    const ytRes = await fetch('data/youtube.json');
-    if (ytRes.ok) {
-      const ytJson = await ytRes.json();
-      if (ytJson.playlists && Array.isArray(ytJson.playlists) && ytJson.playlists.length > 0) {
-        BRANCH_DATA.youtube.nodes = ytJson.playlists.map((p, idx) => ({
-          id: p.id || `yt-pl-${idx}`,
-          title: p.title || "YouTube Channel",
-          subtitle: p.subtitle || "@kunal1320k",
-          tag: "Playlists",
-          url: p.url || "https://www.youtube.com/@kunal1320k",
-          subBranches: (p.songs || []).map(s => ({
-            title: s.title,
-            artist: s.artist || "@kunal1320k",
-            duration: "Open ↗",
-            url: s.url || p.url
-          }))
-        }));
-      }
-    }
-  } catch (_) {}
-
-  // 3. Sync live GitHub repos directly from API (if not rate-limited)
-  try {
-    const res = await fetch('https://api.github.com/users/kunal1320k/repos?sort=updated&per_page=10');
-    if (res.ok) {
-      const repos = await res.json();
-      if (Array.isArray(repos) && repos.length > 0) {
-        applyGitHubReposToBranch(repos);
-      }
-    }
-  } catch (_) {}
-}
-
-function applyGitHubReposToBranch(repos) {
-  if (!BRANCH_DATA.github) return;
-  const filtered = repos.filter(r => r.name);
-  if (filtered.length > 0) {
-    BRANCH_DATA.github.nodes = filtered.slice(0, 7).map(repo => ({
-      id: `gh-${repo.name}`,
-      title: repo.name,
-      subtitle: repo.description || "kunal1320k repository",
-      tag: repo.language ? `${repo.language}${repo.stargazers_count ? ` • ★ ${repo.stargazers_count}` : ''}` : (repo.stargazers_count ? `★ ${repo.stargazers_count}` : "Project"),
-      url: repo.html_url,
-      subBranches: [
-        {
-          title: `★ Stars: ${repo.stargazers_count || 0} • Forks: ${repo.forks_count || 0}`,
-          artist: `Language: ${repo.language || 'Code'}`,
-          duration: "Repo Info",
-          url: repo.html_url
-        },
-        {
-          title: "Browse Source Code",
-          artist: `Updated: ${new Date(repo.updated_at).toLocaleDateString()}`,
-          duration: "GitHub ↗",
-          url: repo.html_url
-        }
-      ]
-    }));
-  }
-}
-
-// Dynamically augment active playlist with live playing track
-function syncLivePlayingTrackToSpotifyBranch() {
-  if (!BRANCH_DATA.spotify || !currentPlaybackState.isPlaying) return;
-  const activePlaylist = BRANCH_DATA.spotify.nodes[0];
-  if (!activePlaylist || !activePlaylist.subBranches) return;
-
-  const currentTitle = currentPlaybackState.title;
-  const currentArtist = currentPlaybackState.artist;
-  const currentUrl = spotifyTrackUrl(currentPlaybackState);
-
-  // Check if already present at top
-  const exists = activePlaylist.subBranches.some(
-    s => s.title.toLowerCase() === currentTitle.toLowerCase()
-  );
-  if (!exists && currentTitle) {
-    activePlaylist.subBranches.unshift({
-      title: currentTitle,
-      artist: currentArtist,
-      duration: "Now Playing 🟢",
-      url: currentUrl
-    });
-  }
-}
-
-// ── DESKTOP ORGANIC TREE ENGINE (SVG BEZIER & COLLISION SAFE) ───────────────
-let activeBranchKey = null;
-let activeBranchSourceElem = null;
-let branchHideTimeout = null;
-let subBranchHideTimeout = null;
-let activeSubBranchCard = null;
-
-function clearBranchSvg() {
-  if (branchTreeSvg) {
-    while (branchTreeSvg.firstChild) {
-      branchTreeSvg.removeChild(branchTreeSvg.firstChild);
-    }
-  }
-}
-
-function clearBranchNodes() {
-  if (branchNodesContainer) {
-    branchNodesContainer.innerHTML = '';
-  }
-  activeSubBranchCard = null;
-}
-
-function cancelBranchHide() {
-  if (branchHideTimeout) {
-    clearTimeout(branchHideTimeout);
-    branchHideTimeout = null;
-  }
-}
-
-function scheduleBranchHide(delay = 280) {
-  cancelBranchHide();
-  branchHideTimeout = setTimeout(() => {
-    hideBranchTree();
-  }, delay);
-}
-
-function hideBranchTree() {
-  cancelBranchHide();
-  if (branchTreeOverlay) branchTreeOverlay.classList.remove('active');
-  clearBranchSvg();
-  clearBranchNodes();
-  document.querySelectorAll('.link-row.branch-active').forEach(el => {
-    el.classList.remove('branch-active');
-  });
-  activeBranchKey = null;
-  activeBranchSourceElem = null;
-}
-
-function updateBranchSvgDimensions() {
-  if (!branchTreeSvg) return;
-  const w = window.innerWidth;
-  const h = window.innerHeight;
-  branchTreeSvg.setAttribute("width", `${w}`);
-  branchTreeSvg.setAttribute("height", `${h}`);
-  branchTreeSvg.setAttribute("viewBox", `0 0 ${w} ${h}`);
-  branchTreeSvg.style.width = `${w}px`;
-  branchTreeSvg.style.height = `${h}px`;
-}
-
-// Generates an organic circular arc path from source (x0, y0) to target (x1, y1)
-// with collision avoidance ensuring ZERO overlap with any adjacent link cards
-function createBranchPath(x0, y0, x1, y1, isSecondary = false, ctx = null) {
-  const dx = x1 - x0;
-  const dy = y1 - y0;
-
-  let d = '';
-
-  if (isSecondary) {
-    // Secondary sub-branch: sweeping circular arc
-    const cx1 = x0 + dx * 0.36;
-    const cy1 = y0 + dy * 0.62;
-    const cx2 = x0 + dx * 0.72;
-    const cy2 = y1;
-    d = `M ${x0.toFixed(1)} ${y0.toFixed(1)} C ${cx1.toFixed(1)} ${cy1.toFixed(1)}, ${cx2.toFixed(1)} ${cy2.toFixed(1)}, ${x1.toFixed(1)} ${y1.toFixed(1)}`;
-  } else if (ctx && ctx.gridRect) {
-    const grid = ctx.gridRect;
-    const sRect = ctx.sourceRect;
-    const key = ctx.key;
-    const isLeft = ctx.isLeftCol;
-
-    if (!isLeft) {
-      // Right Column cards (reddit, telegram, steam):
-      // The card is on the right column; right of this is open space leading to target.
-      // Egress horizontally from x0 into the open gutter before swooping towards target.
-      const cx1 = x0 + Math.max(dx * 0.45, 40);
-      const cy1 = y0;
-      const cx2 = x1 - Math.max(dx * 0.28, 24);
-      const cy2 = y1;
-      d = `M ${x0.toFixed(1)} ${y0.toFixed(1)} C ${cx1.toFixed(1)} ${cy1.toFixed(1)}, ${cx2.toFixed(1)} ${cy2.toFixed(1)}, ${x1.toFixed(1)} ${y1.toFixed(1)}`;
-    } else if (key === 'github') {
-      // GitHub (Row 0, Col 1): Climb vertically above github, sweep across top above reddit, swoop to target
-      const clearY = grid.top - 20;
-      const wpX = grid.right + 26;
-      const wpY = grid.top - 4;
-
-      const segA = `C ${x0.toFixed(1)} ${(y0 - 15).toFixed(1)}, ${x0.toFixed(1)} ${(clearY + 10).toFixed(1)}, ${x0.toFixed(1)} ${clearY.toFixed(1)}`;
-      const segB = `C ${(x0 + 80).toFixed(1)} ${(clearY - 4).toFixed(1)}, ${(grid.right - 20).toFixed(1)} ${(clearY - 4).toFixed(1)}, ${wpX.toFixed(1)} ${wpY.toFixed(1)}`;
-
-      const dx2 = x1 - wpX;
-      const dy2 = y1 - wpY;
-      const cp3x = wpX + Math.max(dx2 * 0.35, 18);
-      const cp3y = wpY + dy2 * 0.42;
-      const cp4x = x1 - Math.max(dx2 * 0.24, 20);
-      const cp4y = y1;
-      const segC = `C ${cp3x.toFixed(1)} ${cp3y.toFixed(1)}, ${cp4x.toFixed(1)} ${cp4y.toFixed(1)}, ${x1.toFixed(1)} ${y1.toFixed(1)}`;
-
-      d = `M ${x0.toFixed(1)} ${y0.toFixed(1)} ${segA} ${segB} ${segC}`;
-    } else if (key === 'spotify') {
-      // Spotify (Row 3, Col 1): Drop vertically below spotify, sweep across bottom under grid, swoop to target
-      const clearY = grid.bottom + 20;
-      const wpX = grid.right + 26;
-      const wpY = grid.bottom + 4;
-
-      const segA = `C ${x0.toFixed(1)} ${(y0 + 15).toFixed(1)}, ${x0.toFixed(1)} ${(clearY - 10).toFixed(1)}, ${x0.toFixed(1)} ${clearY.toFixed(1)}`;
-      const segB = `C ${(x0 + 80).toFixed(1)} ${(clearY + 4).toFixed(1)}, ${(grid.right - 20).toFixed(1)} ${(clearY + 4).toFixed(1)}, ${wpX.toFixed(1)} ${wpY.toFixed(1)}`;
-
-      const dx2 = x1 - wpX;
-      const dy2 = y1 - wpY;
-      const cp3x = wpX + Math.max(dx2 * 0.35, 18);
-      const cp3y = wpY + dy2 * 0.42;
-      const cp4x = x1 - Math.max(dx2 * 0.24, 20);
-      const cp4y = y1;
-      const segC = `C ${cp3x.toFixed(1)} ${cp3y.toFixed(1)}, ${cp4x.toFixed(1)} ${cp4y.toFixed(1)}, ${x1.toFixed(1)} ${y1.toFixed(1)}`;
-
-      d = `M ${x0.toFixed(1)} ${y0.toFixed(1)} ${segA} ${segB} ${segC}`;
-    } else if (key === 'myanimelist') {
-      // MyAnimeList (Row 1, Col 1): Curve through active card to left edge, up around left margin, across top above reddit
-      const clearY = grid.top - 20;
-      const wpX = grid.right + 26;
-      const wpY = grid.top - 4;
-      const cardLeft = sRect.left;
-
-      const seg0 = `C ${(x0 - 60).toFixed(1)} ${y0.toFixed(1)}, ${(cardLeft + 30).toFixed(1)} ${y0.toFixed(1)}, ${cardLeft.toFixed(1)} ${y0.toFixed(1)}`;
-      const seg1 = `C ${(grid.left - 26).toFixed(1)} ${y0.toFixed(1)}, ${(grid.left - 26).toFixed(1)} ${clearY.toFixed(1)}, ${(grid.left + 10).toFixed(1)} ${clearY.toFixed(1)}`;
-      const seg2 = `C ${(grid.left + 180).toFixed(1)} ${clearY.toFixed(1)}, ${(grid.right - 20).toFixed(1)} ${(clearY - 4).toFixed(1)}, ${wpX.toFixed(1)} ${wpY.toFixed(1)}`;
-
-      const dx2 = x1 - wpX;
-      const dy2 = y1 - wpY;
-      const cp3x = wpX + Math.max(dx2 * 0.35, 18);
-      const cp3y = wpY + dy2 * 0.42;
-      const cp4x = x1 - Math.max(dx2 * 0.24, 20);
-      const cp4y = y1;
-      const seg3 = `C ${cp3x.toFixed(1)} ${cp3y.toFixed(1)}, ${cp4x.toFixed(1)} ${cp4y.toFixed(1)}, ${x1.toFixed(1)} ${y1.toFixed(1)}`;
-
-      d = `M ${x0.toFixed(1)} ${y0.toFixed(1)} ${seg0} ${seg1} ${seg2} ${seg3}`;
-    } else if (key === 'youtube') {
-      // YouTube (Row 2, Col 1): Curve through active card to left edge, down around left margin, across bottom under grid
-      const clearY = grid.bottom + 20;
-      const wpX = grid.right + 26;
-      const wpY = grid.bottom + 4;
-      const cardLeft = sRect.left;
-
-      const seg0 = `C ${(x0 - 60).toFixed(1)} ${y0.toFixed(1)}, ${(cardLeft + 30).toFixed(1)} ${y0.toFixed(1)}, ${cardLeft.toFixed(1)} ${y0.toFixed(1)}`;
-      const seg1 = `C ${(grid.left - 26).toFixed(1)} ${y0.toFixed(1)}, ${(grid.left - 26).toFixed(1)} ${clearY.toFixed(1)}, ${(grid.left + 10).toFixed(1)} ${clearY.toFixed(1)}`;
-      const seg2 = `C ${(grid.left + 180).toFixed(1)} ${clearY.toFixed(1)}, ${(grid.right - 20).toFixed(1)} ${(clearY + 4).toFixed(1)}, ${wpX.toFixed(1)} ${wpY.toFixed(1)}`;
-
-      const dx2 = x1 - wpX;
-      const dy2 = y1 - wpY;
-      const cp3x = wpX + Math.max(dx2 * 0.35, 18);
-      const cp3y = wpY + dy2 * 0.42;
-      const cp4x = x1 - Math.max(dx2 * 0.24, 20);
-      const cp4y = y1;
-      const seg3 = `C ${cp3x.toFixed(1)} ${cp3y.toFixed(1)}, ${cp4x.toFixed(1)} ${cp4y.toFixed(1)}, ${x1.toFixed(1)} ${y1.toFixed(1)}`;
-
-      d = `M ${x0.toFixed(1)} ${y0.toFixed(1)} ${seg0} ${seg1} ${seg2} ${seg3}`;
-    } else {
-      const cx1 = x0 + dx * 0.35;
-      const cy1 = y0;
-      const cx2 = x1 - dx * 0.25;
-      const cy2 = y1;
-      d = `M ${x0.toFixed(1)} ${y0.toFixed(1)} C ${cx1.toFixed(1)} ${cy1.toFixed(1)}, ${cx2.toFixed(1)} ${cy2.toFixed(1)}, ${x1.toFixed(1)} ${y1.toFixed(1)}`;
-    }
-  } else {
-    // Default fallback
-    const arcBulge = Math.min(Math.max(Math.abs(dy) * 0.16, 8), 36);
-    const arcDir = dy >= 0 ? 1 : -1;
-    const cx1 = x0 + dx * 0.28;
-    const cy1 = y0 + dy * 0.72 + (arcDir * arcBulge * 0.25);
-    const cx2 = x0 + dx * 0.68;
-    const cy2 = y1;
-    d = `M ${x0.toFixed(1)} ${y0.toFixed(1)} C ${cx1.toFixed(1)} ${cy1.toFixed(1)}, ${cx2.toFixed(1)} ${cy2.toFixed(1)}, ${x1.toFixed(1)} ${y1.toFixed(1)}`;
-  }
-
-  const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-  path.setAttribute("d", d);
-  path.setAttribute("class", `tree-branch-line ${isSecondary ? 'secondary' : ''}`);
-  path.setAttribute("fill", "none");
-  path.setAttribute("stroke", isSecondary ? "rgba(255, 255, 255, 0.24)" : "rgba(255, 255, 255, 0.40)");
-  path.setAttribute("stroke-width", isSecondary ? "1.2" : "1.5");
-  path.setAttribute("stroke-linecap", "round");
-  path.setAttribute("stroke-linejoin", "round");
-
-  // Animated draw-in effect with guaranteed visibility
-  const approxLength = Math.max(Math.ceil(Math.hypot(dx, dy) * 2.2) + 250, 400);
-  path.style.strokeDasharray = `${approxLength}`;
-  path.style.strokeDashoffset = `${approxLength}`;
-
-  // Execute drawing animation via Web Animations API
-  try {
-    path.animate(
-      [
-        { strokeDashoffset: `${approxLength}`, opacity: 0.25 },
-        { strokeDashoffset: '0', opacity: 1 }
-      ],
-      {
-        duration: 320,
-        easing: 'cubic-bezier(0.16, 1, 0.3, 1)',
-        fill: 'forwards'
-      }
-    );
-  } catch (_) {}
-
-  // Fallback to guarantee the white line is 100% visible
-  setTimeout(() => {
-    if (path.isConnected) {
-      path.style.strokeDashoffset = '0';
-      path.style.opacity = '1';
-    }
-  }, 340);
-
-  return path;
-}
-
-// Clean circular ring joint dot at fork or node attachment (matching reference image)
-function createBranchDot(x, y, isSecondary = false, isOrigin = false) {
-  const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-  circle.setAttribute("cx", x.toFixed(1));
-  circle.setAttribute("cy", y.toFixed(1));
-  circle.setAttribute("r", isOrigin ? "3.2" : (isSecondary ? "2.2" : "3.0"));
-  circle.setAttribute("class", `tree-branch-node-dot ${isOrigin ? 'origin' : ''} ${isSecondary ? 'secondary' : ''}`);
-  circle.setAttribute("fill", isOrigin ? "#ffffff" : "rgba(14, 13, 11, 0.92)");
-  circle.setAttribute("stroke", isOrigin ? "rgba(255, 255, 255, 0.4)" : (isSecondary ? "rgba(255, 255, 255, 0.45)" : "rgba(255, 255, 255, 0.65)"));
-  circle.setAttribute("stroke-width", isOrigin ? "2.5" : (isSecondary ? "1.2" : "1.5"));
-  return circle;
-}
-
-// Layout primary branch nodes safely without EVER overlapping #spotify-card or links-grid
-function computeSafeBranchPositions(sourceRect, nodeCount, key) {
-  const spotifyCardElem = document.getElementById('spotify-card');
-  const spRect = spotifyCardElem ? spotifyCardElem.getBoundingClientRect() : null;
-  const linksGridElem = document.getElementById('links-grid');
-  const gridRect = linksGridElem ? linksGridElem.getBoundingClientRect() : null;
-  const vw = window.innerWidth;
-  const vh = window.innerHeight;
-
-  const cardW = 250;
-  const cardH = 76;
-  const maxNodes = Math.min(nodeCount, 4); // Display top 4 primary cards as shown in sketch
-
-  // Horizontal position:
-  // Must be strictly to the right of the links grid (min 36px clear of telegram / steam)
-  const minSafeX = (gridRect ? gridRect.right : 340) + 36;
-  // Align into the open column underneath the Spotify player card
-  let targetX = spRect ? Math.max(minSafeX, spRect.left + 16) : minSafeX;
-  if (targetX + cardW > vw - 24) {
-    targetX = vw - cardW - 24;
-  }
-  if (targetX < minSafeX) {
-    targetX = minSafeX;
-  }
-
-  // Vertical position:
-  // Positioned directly below the Spotify player card in the open area
-  const spBottom = spRect ? spRect.bottom : 260;
-  let startY = spBottom + 20;
-
-  // Dynamic vertical gap calculation to ensure zero overlap between cards
-  const availableH = vh - startY - 24;
-  let gapY = 16;
-  if (availableH < maxNodes * cardH + (maxNodes - 1) * gapY) {
-    gapY = Math.max(8, Math.floor((availableH - maxNodes * cardH) / Math.max(1, maxNodes - 1)));
-  }
-
-  // Viewport bottom boundary protection
-  if (startY + maxNodes * cardH + (maxNodes - 1) * gapY > vh - 16) {
-    startY = Math.max(spBottom + 10, vh - 16 - (maxNodes * cardH + (maxNodes - 1) * gapY));
-  }
-
-  const positions = [];
-  for (let i = 0; i < maxNodes; i++) {
-    // Organic stagger offset matching real tree branch leaves (as in user sketch)
-    const staggerX = (i % 2 === 1) ? 22 : 0;
-    const finalX = Math.min(targetX + staggerX, vw - cardW - 16);
-    const finalY = startY + i * (cardH + gapY);
-    positions.push({ x: finalX, y: finalY });
-  }
-
-  return positions;
-}
-
-// Render primary branch nodes and SVG lines
-function renderPrimaryBranches(key, sourceElem) {
-  const data = BRANCH_DATA[key];
-  if (!data || !data.nodes || data.nodes.length === 0) return;
-
-  updateBranchSvgDimensions();
-  clearBranchSvg();
-  clearBranchNodes();
-
-  const sourceRect = sourceElem.getBoundingClientRect();
-  const linksGridElem = document.getElementById('links-grid');
-  const gridRect = linksGridElem ? linksGridElem.getBoundingClientRect() : null;
-
-  // Locate arrow icon inside hovered card so the origin dot is neatly framed
-  const arrow = sourceElem.querySelector('.arrow');
-  const arrowRect = arrow ? arrow.getBoundingClientRect() : null;
-  const x0 = arrowRect ? (arrowRect.left + arrowRect.width / 2) : (sourceRect.right - 14);
-  const y0 = arrowRect ? (arrowRect.top + arrowRect.height / 2) : (sourceRect.top + sourceRect.height / 2);
-
-  // Add clean origin joint ring directly on the hovered link arrow
-  const originDot = createBranchDot(x0, y0, false, true);
-  branchTreeSvg.appendChild(originDot);
-
-  const nodes = data.nodes;
-  const positions = computeSafeBranchPositions(sourceRect, nodes.length, key);
-  const cardH = 76;
-
-  // Background subtle orbital guide arc framing node cluster
-  if (positions.length > 1) {
-    const topY = positions[0].y + cardH / 2;
-    const bottomY = positions[positions.length - 1].y + cardH / 2;
-    const minCardX = Math.min(...positions.map(p => p.x));
-    const arcX = minCardX - 16;
-    const arcPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
-    arcPath.setAttribute("class", "tree-branch-orbital-arc");
-    arcPath.setAttribute("d", `M ${(arcX + 16).toFixed(1)} ${(topY - 18).toFixed(1)} Q ${(arcX - 14).toFixed(1)} ${((topY + bottomY) / 2).toFixed(1)}, ${(arcX + 16).toFixed(1)} ${(bottomY + 18).toFixed(1)}`);
-    branchTreeSvg.appendChild(arcPath);
-  }
-
-  const isLeftCol = gridRect ? (sourceRect.left < gridRect.left + gridRect.width * 0.45) : false;
-
-  // Draw organic circular arc curves & place cards
-  positions.forEach((pos, i) => {
-    const node = nodes[i];
-    if (!node) return;
-
-    const x1 = pos.x;
-    const y1 = pos.y + cardH / 2; // Attach branch to vertical middle-left of card
-
-    // SVG Branch Path with collision-free perimeter routing
-    const branchPath = createBranchPath(x0, y0, x1, y1, false, {
-      key,
-      isLeftCol,
-      sourceRect,
-      gridRect,
-      targetIndex: i,
-      totalTargets: positions.length
-    });
-    branchTreeSvg.appendChild(branchPath);
-
-    // Fork Dot ring at card attachment
-    const dot = createBranchDot(x1, y1, false);
-    branchTreeSvg.appendChild(dot);
-
-    // Leaf Card Element
-    const card = document.createElement('a');
-    card.className = 'tree-leaf-card';
-    card.href = node.url || '#';
-    card.target = '_blank';
-    card.rel = 'noopener noreferrer';
-    card.style.left = `${pos.x}px`;
-    card.style.top = `${pos.y}px`;
-    card.style.animationDelay = `${i * 0.04}s`;
-    card.dataset.nodeId = node.id;
-
-    // Format clean details text without pills or brown boxes
-    let detailText = '';
-    if (key === 'github') {
-      detailText = node.tag || '';
-    } else if (key === 'spotify') {
-      detailText = node.subtitle || (node.subBranches ? `${node.subBranches.length} songs` : 'Playlist');
-    } else if (key === 'myanimelist') {
-      detailText = node.subtitle || 'Completed';
-    } else if (key === 'youtube') {
-      detailText = node.subtitle || 'Channel';
-    } else if (key === 'reddit' || key === 'steam' || key === 'telegram') {
-      detailText = node.subtitle || node.tag || '';
-    }
-
-    card.innerHTML = `
-      <div class="card-head">
-        <span class="card-title">${escapeHtml(node.title)}</span>
-        <span class="card-arrow">↗</span>
-      </div>
-      ${node.subtitle ? `<div class="card-desc">${escapeHtml(node.subtitle)}</div>` : ''}
-      ${detailText && detailText !== node.subtitle ? `<div class="card-detail">${escapeHtml(detailText)}</div>` : ''}
-    `;
-
-    // Sub-branch interaction and active line illumination on primary node hover
-    card.addEventListener('mouseenter', () => {
-      cancelBranchHide();
-      branchPath.classList.add('active');
-      dot.classList.add('active');
-      if (node.subBranches && node.subBranches.length > 0) {
-        renderSubBranches(card, node.subBranches, key);
-      } else {
-        removeSubBranches();
-      }
-    });
-
-    card.addEventListener('mouseleave', () => {
-      branchPath.classList.remove('active');
-      dot.classList.remove('active');
-      // Small grace delay before removing sub-branch unless hovering into sub-branch
-      subBranchHideTimeout = setTimeout(() => {
-        if (!isCursorInSubBranches()) {
-          removeSubBranches();
-        }
-      }, 180);
-    });
-
-    branchNodesContainer.appendChild(card);
-  });
-}
-
-// Render secondary sub-branches (songs for playlist, commits for repo)
-function renderSubBranches(parentCardElem, subList, key) {
-  removeSubBranches();
-  activeSubBranchCard = parentCardElem;
-
-  const parentRect = parentCardElem.getBoundingClientRect();
-  const vw = window.innerWidth;
-  const vh = window.innerHeight;
-  const linksGridElem = document.getElementById('links-grid');
-  const gridRect = linksGridElem ? linksGridElem.getBoundingClientRect() : null;
-
-  const subCardW = 205;
-  const subCardH = 46;
-  const subGap = 8;
-  const maxSubs = Math.min(subList.length, 4);
-
-  // Determine sprout direction: right or flip to left if near edge
-  let sproutRight = true;
-  if (parentRect.right + 30 + subCardW > vw - 16) {
-    sproutRight = false;
-  }
-
-  let subStartX;
-  let sx0, sy0, targetAttachX;
-
-  if (sproutRight) {
-    sx0 = parentRect.right;
-    sy0 = parentRect.top + parentRect.height / 2;
-    subStartX = sx0 + 32;
-    targetAttachX = subStartX;
-  } else {
-    sx0 = parentRect.left;
-    sy0 = parentRect.top + parentRect.height / 2;
-    subStartX = Math.max(gridRect ? gridRect.right + 20 : 20, sx0 - subCardW - 32);
-    targetAttachX = subStartX + subCardW;
-  }
-
-  let startSubY = parentRect.top - 8;
-  if (startSubY + maxSubs * (subCardH + subGap) > vh - 20) {
-    startSubY = Math.max(20, vh - 20 - maxSubs * (subCardH + subGap));
-  }
-
-  subList.slice(0, maxSubs).forEach((sub, idx) => {
-    const subY = startSubY + idx * (subCardH + subGap);
-    const targetAttachY = subY + subCardH / 2;
-
-    // Secondary curved branch line
-    const subLine = createBranchPath(sx0, sy0, targetAttachX, targetAttachY, true);
-    subLine.classList.add('active-sub-line');
-    branchTreeSvg.appendChild(subLine);
-
-    // Dot at sub-attachment
-    const subDot = createBranchDot(targetAttachX, targetAttachY, true);
-    subDot.classList.add('active-sub-dot');
-    branchTreeSvg.appendChild(subDot);
-
-    // Sub-leaf Card
-    const subCard = document.createElement('a');
-    subCard.className = 'tree-leaf-subcard active-sub-card';
-    subCard.href = sub.url || '#';
-    subCard.target = '_blank';
-    subCard.rel = 'noopener noreferrer';
-    subCard.style.left = `${subStartX}px`;
-    subCard.style.top = `${subY}px`;
-    subCard.style.animationDelay = `${idx * 0.04}s`;
-
-    subCard.innerHTML = `
-      <div class="sub-title">${escapeHtml(sub.title)}</div>
-      ${sub.artist ? `<div class="sub-artist">${escapeHtml(sub.artist)}</div>` : ''}
-      <div class="sub-meta">
-        <span>${escapeHtml(sub.duration || '')}</span>
-        <span>↗</span>
-      </div>
-    `;
-
-    subCard.addEventListener('mouseenter', () => {
-      cancelBranchHide();
-      subLine.classList.add('active');
-      subDot.classList.add('active');
-      if (subBranchHideTimeout) clearTimeout(subBranchHideTimeout);
-    });
-
-    subCard.addEventListener('mouseleave', () => {
-      subLine.classList.remove('active');
-      subDot.classList.remove('active');
-      scheduleBranchHide(240);
-    });
-
-    branchNodesContainer.appendChild(subCard);
-  });
-}
-
-function removeSubBranches() {
-  if (branchTreeSvg) {
-    branchTreeSvg.querySelectorAll('.active-sub-line, .active-sub-dot').forEach(el => el.remove());
-  }
-  if (branchNodesContainer) {
-    branchNodesContainer.querySelectorAll('.active-sub-card').forEach(el => el.remove());
-  }
-  activeSubBranchCard = null;
-}
-
-function isCursorInSubBranches() {
-  const subCards = document.querySelectorAll('.active-sub-card:hover');
-  return subCards.length > 0;
-}
-
-function escapeHtml(str) {
-  if (!str) return '';
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
-}
-
-// ── MOBILE INTERACTIVE BRANCH DRAWER ENGINE ─────────────────────────────────
-function openMobileBranchModal(key) {
-  const data = BRANCH_DATA[key];
-  if (!data) return;
-
-  if (mobileBranchTitle) mobileBranchTitle.textContent = data.title;
-  if (mobileBranchBadge) mobileBranchBadge.textContent = data.badge;
-
-  if (mobileBranchContent) {
-    mobileBranchContent.innerHTML = '';
-
-    // Direct profile reachout button
-    const directBtn = document.createElement('a');
-    directBtn.className = 'spotify-btn primary-pill';
-    directBtn.href = data.profileUrl || '#';
-    directBtn.target = '_blank';
-    directBtn.rel = 'noopener noreferrer';
-    directBtn.style.alignSelf = 'flex-start';
-    directBtn.style.marginBottom = '12px';
-    directBtn.innerHTML = `
-      <span style="display:inline-flex;align-items:center;gap:6px;">
-        ${data.icon || ''}
-        <span>Visit ${escapeHtml(data.badge)} Profile ↗</span>
-      </span>
-    `;
-    mobileBranchContent.appendChild(directBtn);
-
-    // List branches with expandable accordions
-    data.nodes.forEach((node) => {
-      const nodeWrapper = document.createElement('div');
-      nodeWrapper.className = 'mobile-branch-node-card';
-
-      const hasSubs = node.subBranches && node.subBranches.length > 0;
-      const expandIcon = hasSubs ? `<span class="mobile-expand-indicator" style="font-size:11px;color:rgba(232,226,217,0.55);margin-left:auto;">${node.subBranches.length} items ▾</span>` : `<span style="font-size:11px;opacity:0.6;margin-left:auto;">↗</span>`;
-
-      nodeWrapper.innerHTML = `
-        <div class="mobile-node-main" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;">
-          <div>
-            <div style="font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;color:#ffffff;">${escapeHtml(node.title)}</div>
-            <div style="font-size:11px;color:#b5aba0;margin-top:2px;">${escapeHtml(node.subtitle)}</div>
-          </div>
-          ${expandIcon}
-        </div>
-      `;
-
-      if (hasSubs) {
-        const subListElem = document.createElement('div');
-        subListElem.className = 'mobile-sub-list';
-        subListElem.style.display = 'flex'; // Expanded by default on mobile for easy browsing
-
-        node.subBranches.forEach(sub => {
-          const subA = document.createElement('a');
-          subA.href = sub.url || '#';
-          subA.target = '_blank';
-          subA.rel = 'noopener noreferrer';
-          subA.style.display = 'flex';
-          subA.style.alignItems = 'center';
-          subA.style.justifyContent = 'space-between';
-          subA.style.padding = '6px 8px';
-          subA.style.background = 'rgba(255,255,255,0.03)';
-          subA.style.borderRadius = '6px';
-          subA.style.textDecoration = 'none';
-          subA.style.color = '#e8e2d9';
-          subA.innerHTML = `
-            <div>
-              <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#ffffff;display:block;">${escapeHtml(sub.title)}</span>
-              <span style="font-size:10px;color:#8c8276;">${escapeHtml(sub.artist || '')}</span>
-            </div>
-            <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:rgba(232,226,217,0.55);">${escapeHtml(sub.duration || 'play ↗')}</span>
-          `;
-          subListElem.appendChild(subA);
-        });
-
-        // Toggle expand/collapse on header click
-        const mainHeader = nodeWrapper.querySelector('.mobile-node-main');
-        mainHeader.addEventListener('click', (e) => {
-          e.preventDefault();
-          const isCollapsed = subListElem.style.display === 'none';
-          subListElem.style.display = isCollapsed ? 'flex' : 'none';
-          const ind = mainHeader.querySelector('.mobile-expand-indicator');
-          if (ind) ind.textContent = isCollapsed ? `${node.subBranches.length} items ▾` : `${node.subBranches.length} items ▸`;
-        });
-
-        nodeWrapper.appendChild(subListElem);
-      } else {
-        nodeWrapper.style.cursor = 'pointer';
-        nodeWrapper.addEventListener('click', () => {
-          window.open(node.url, '_blank', 'noopener,noreferrer');
-        });
-      }
-
-      mobileBranchContent.appendChild(nodeWrapper);
-    });
-  }
-
-  if (mobileBranchModal) {
-    mobileBranchModal.classList.add('active');
-    mobileBranchModal.setAttribute('aria-hidden', 'false');
-  }
-}
-
-function closeMobileBranchModal() {
-  if (mobileBranchModal) {
-    mobileBranchModal.classList.remove('active');
-    mobileBranchModal.setAttribute('aria-hidden', 'true');
-  }
-}
-
-if (mobileBranchClose) mobileBranchClose.addEventListener('click', closeMobileBranchModal);
-if (mobileBranchBackdrop) mobileBranchBackdrop.addEventListener('click', closeMobileBranchModal);
-window.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') closeMobileBranchModal();
-});
-
-// ── HOOK INTO LINK ROWS & DESKTOP/MOBILE EVENT DISPATCHER ───────────────────
-function initBranchTreeSystem() {
-  const linkRows = document.querySelectorAll('.link-row');
-
-  linkRows.forEach(row => {
-    const key = row.dataset.key || row.querySelector('.name')?.textContent?.trim().toLowerCase();
-    if (!key || !BRANCH_DATA[key]) return;
-
-    // Desktop hover interactions
-    row.addEventListener('mouseenter', () => {
-      if (isMobile() || window.matchMedia('(pointer: coarse)').matches) return;
-      cancelBranchHide();
-      // Brief debounce for silky smooth feel
-      setTimeout(() => {
-        if (row.matches(':hover')) {
-          activeBranchKey = key;
-          activeBranchSourceElem = row;
-          document.querySelectorAll('.link-row.branch-active').forEach(el => el.classList.remove('branch-active'));
-          row.classList.add('branch-active');
-          if (branchTreeOverlay) branchTreeOverlay.classList.add('active');
-          syncLivePlayingTrackToSpotifyBranch();
-          renderPrimaryBranches(key, row);
-        }
-      }, 35);
-    });
-
-    row.addEventListener('mouseleave', () => {
-      if (isMobile() || window.matchMedia('(pointer: coarse)').matches) return;
-      scheduleBranchHide(280);
-    });
-
-    // Mobile touch & hold / tap interactions
-    let touchHoldTimer = null;
-    let touchStartX = 0;
-    let touchStartY = 0;
-
-    row.addEventListener('touchstart', (e) => {
-      const touch = e.touches[0];
-      touchStartX = touch.clientX;
-      touchStartY = touch.clientY;
-
-      touchHoldTimer = setTimeout(() => {
-        if (navigator.vibrate) {
-          try { navigator.vibrate([40, 20, 40]); } catch (_) {}
-        }
-        openMobileBranchModal(key);
-      }, 380);
-    }, { passive: true });
-
-    row.addEventListener('touchmove', (e) => {
-      const touch = e.touches[0];
-      if (Math.abs(touch.clientX - touchStartX) > 12 || Math.abs(touch.clientY - touchStartY) > 12) {
-        if (touchHoldTimer) {
-          clearTimeout(touchHoldTimer);
-          touchHoldTimer = null;
-        }
-      }
-    }, { passive: true });
-
-    row.addEventListener('touchend', () => {
-      if (touchHoldTimer) {
-        clearTimeout(touchHoldTimer);
-        touchHoldTimer = null;
-      }
-    }, { passive: true });
-
-    // Click fallback: on mobile devices, open the branch drawer
-    row.addEventListener('click', (e) => {
-      if (isMobile() || window.matchMedia('(pointer: coarse)').matches) {
-        e.preventDefault();
-        openMobileBranchModal(key);
-      }
-    });
-  });
-
-  // Keep branch alive when mouse hovers into SVG/Nodes container
-  if (branchTreeOverlay) {
-    branchTreeOverlay.addEventListener('mouseenter', cancelBranchHide);
-    branchTreeOverlay.addEventListener('mouseleave', () => scheduleBranchHide(220));
-  }
-
-  // Handle window resize dynamically
-  window.addEventListener('resize', () => {
-    updateBranchSvgDimensions();
-    if (activeBranchKey && activeBranchSourceElem && !isMobile()) {
-      renderPrimaryBranches(activeBranchKey, activeBranchSourceElem);
-    }
-  }, { passive: true });
-
-  // Hide branch when scrolling to prevent floating misalignment
-  const onScrollHide = () => {
-    if (activeBranchKey) {
-      hideBranchTree();
-    }
-  };
-  const contentScrollWrap = document.getElementById('content-scroll-wrap');
-  if (contentScrollWrap) contentScrollWrap.addEventListener('scroll', onScrollHide, { passive: true });
-  if (aestheticRoot) aestheticRoot.addEventListener('scroll', onScrollHide, { passive: true });
-  window.addEventListener('scroll', onScrollHide, { passive: true });
-
-  // Start background live sync across real data sources
-  syncRealDataSources();
-}
-
-// Initialize when DOM is ready
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initBranchTreeSystem);
-} else {
-  initBranchTreeSystem();
-}
-
