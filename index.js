@@ -30,9 +30,13 @@ const SPOTIFY_CONFIG = {
 };
 
 
+let revealed = false;
+let isRevealing = false;
 const rawRoot = document.getElementById('raw-root');
 const aestheticRoot = document.getElementById('aesthetic-root');
 const dropBtn = document.getElementById('drop');
+const upperPlayBtn = document.getElementById('upper-play-btn');
+const albumArtWrap = document.getElementById('album-art-wrap');
 const waveRing = document.getElementById('wave-ring');
 const treeCanvas = document.getElementById('tree-canvas');
 const canvas = document.getElementById('leaves-canvas');
@@ -141,6 +145,12 @@ function renderSongStorageUI(latestSong, isCurrentlyLive = false, historyItems =
     }
   }
 
+  if (rawSpotifyText && song && song.title && song.artist) {
+    if (isCurrentlyLive) {
+      rawSpotifyText.textContent = `${song.title} — ${song.artist}`;
+    }
+  }
+
   if (rawHistoryList) {
     const history = (Array.isArray(historyItems) && historyItems.length > 0) ? historyItems : getStoredSongHistory();
     if (history.length > 0) {
@@ -154,6 +164,33 @@ function renderSongStorageUI(latestSong, isCurrentlyLive = false, historyItems =
     } else {
       if (rawHistoryDetails) rawHistoryDetails.style.display = "none";
     }
+  }
+}
+
+function syncLastFmHistory(tracks) {
+  if (!Array.isArray(tracks) || tracks.length === 0) return;
+  const history = tracks.map(tr => {
+    const title = tr.name || "Unknown Track";
+    const artist = (tr.artist && (tr.artist['#text'] || tr.artist.name)) || "Unknown Artist";
+    let ts = Date.now();
+    if (tr.date && tr.date.uts) {
+      ts = parseInt(tr.date.uts, 10) * 1000;
+    }
+    return {
+      title: title.trim(),
+      artist: artist.trim(),
+      timestamp: ts,
+      dateTime: formatSongDateTime(ts),
+      date_time: formatSongDateTime(ts),
+      is_playing: Boolean(tr['@attr'] && tr['@attr'].nowplaying === "true")
+    };
+  }).filter(item => !(item.title.toLowerCase().includes("angrexxxxi") && item.artist.toLowerCase().includes("playlist")));
+
+  if (history.length > 0) {
+    try {
+      localStorage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify(history.slice(0, 10)));
+    } catch (_) {}
+    renderSongStorageUI(null, false, history);
   }
 }
 
@@ -233,6 +270,9 @@ async function fetchOnlineSongHistory() {
           dateTime: h.date_time || h.dateTime || formatSongDateTime(h.timestamp)
         })) : [];
 
+        if (Boolean(data.is_playing) && rawSpotifyText) {
+          rawSpotifyText.textContent = `${onlineSong.title} — ${onlineSong.artist}`;
+        }
         renderSongStorageUI(onlineSong, Boolean(data.is_playing), onlineHistory);
 
         // Update local cache
@@ -1506,9 +1546,10 @@ function handleLanyardData(data) {
     };
     renderSpotifyUI(currentPlaybackState);
   } else {
+    const wasLanyardActive = lanyardSocketActive;
     lanyardSocketActive = false;
-    // If embed playing or Last.fm is currently active, do NOT override with offline
-    if (isSpotifyEmbedPlaying || lastFmNowPlayingActive || (Date.now() - lastFmLastSeenPlaying < 25000)) {
+    // If Lanyard was not previously active, or if embed playing or Last.fm is currently active, do NOT override with offline
+    if (!wasLanyardActive || isSpotifyEmbedPlaying || lastFmNowPlayingActive || (Date.now() - lastFmLastSeenPlaying < 25000)) {
       return;
     }
 
@@ -1864,9 +1905,11 @@ async function fetchLastFmNowPlaying() {
     if (!res.ok) return;
     const data = await res.json();
 
+    let currentTrack = null;
+    let tracks = [];
     if (data && data.recenttracks && data.recenttracks.track) {
-      const tracks = Array.isArray(data.recenttracks.track) ? data.recenttracks.track : [data.recenttracks.track];
-      const currentTrack = tracks[0];
+      tracks = Array.isArray(data.recenttracks.track) ? data.recenttracks.track : [data.recenttracks.track];
+      currentTrack = tracks[0];
 
       if (currentTrack && currentTrack['@attr'] && currentTrack['@attr'].nowplaying === "true") {
         lastFmLastSeenPlaying = Date.now();
@@ -1916,6 +1959,10 @@ async function fetchLastFmNowPlaying() {
         currentPlaybackState = preservePreciseTiming(lastFmState);
 
         renderSpotifyUI(currentPlaybackState);
+        saveSongOnline(title, artist, Date.now(), true);
+        if (tracks.length > 1) {
+          syncLastFmHistory(tracks.slice(1));
+        }
 
         // Fetch duration & fallback artwork in background
         if (!albumArt || !currentPlaybackState.durationMs) {
@@ -2041,7 +2088,6 @@ function doDrop(e) {
   if (contentScrollWrap) contentScrollWrap.scrollTop = 0;
 
   const playPromise = themeAudio.play();
-  saveSongOnline("love", "wave to earth", Date.now(), true);
 
   if (playPromise && typeof playPromise.then === 'function') {
     playPromise.then(() => {
