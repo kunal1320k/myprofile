@@ -220,11 +220,7 @@ function renderSongStorageUI(latestSong, isCurrentlyLive = false, historyItems =
     let nextText = "[ no history recorded yet ]";
     if (song && song.title && song.artist) {
       const cleanArtist = getCleanArtist(song.artist);
-      if (isCurrentlyLive) {
-        nextText = `${song.title} — ${cleanArtist} (${song.dateTime || song.date_time || 'listening now'})`;
-      } else {
-        nextText = `${song.title} — ${cleanArtist} (${song.dateTime || song.date_time || ''})`;
-      }
+      nextText = `${song.title} — ${cleanArtist}`;
     }
     if (rawLastPlayedText.dataset.currentText !== nextText) {
       rawLastPlayedText.dataset.currentText = nextText;
@@ -245,10 +241,10 @@ function renderSongStorageUI(latestSong, isCurrentlyLive = false, historyItems =
   if (rawHistoryList) {
     const history = getUnifiedHistory(historyItems, song);
     if (history.length > 0) {
-      const historyKey = history.map(item => `${item.title}:::${item.artist}:::${item.dateTime || item.date_time || ''}`).join('|||');
+      const historyKey = history.map(item => `${item.title}:::${item.artist}`).join('|||');
       if (rawHistoryList.dataset.currentKey !== historyKey) {
         rawHistoryList.dataset.currentKey = historyKey;
-        rawHistoryList.innerHTML = history.map(item => `<li><span style="font-weight:500;">${item.title}</span> — <span>${item.artist}</span> <span style="opacity:0.6;margin-left:4px;font-size:12px;">(${item.dateTime || item.date_time || ''})</span></li>`).join('');
+        rawHistoryList.innerHTML = history.map(item => `<li><span style="font-weight:500;">${item.title}</span> — <span>${item.artist}</span></li>`).join('');
       }
       if (rawHistoryDetails && rawHistoryDetails.style.display !== "block") {
         rawHistoryDetails.style.display = "block";
