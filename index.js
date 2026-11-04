@@ -89,6 +89,44 @@ const STORAGE_KEYS = {
   HISTORY: 'kunal_song_history'
 };
 
+function getCleanArtist(raw) {
+  if (!raw) return "";
+  return raw.split(/\s*•\s*/)[0].trim();
+}
+
+function isSameTrack(a, b) {
+  if (!a || !b) return false;
+  const tA = (a.title || "").toLowerCase().replace(/\s*-\s*radio\s*edit/i, '').trim();
+  const tB = (b.title || "").toLowerCase().replace(/\s*-\s*radio\s*edit/i, '').trim();
+  const aA = getCleanArtist(a.artist).toLowerCase();
+  const aB = getCleanArtist(b.artist).toLowerCase();
+  return (tA === tB && aA === aB);
+}
+
+function sanitizeAndDedupeHistory(items) {
+  if (!Array.isArray(items)) return [];
+  const seen = new Set();
+  const result = [];
+  for (const item of items) {
+    if (!item || !item.title || !item.artist) continue;
+    const cleanArtist = getCleanArtist(item.artist);
+    const cleanTitle = item.title.trim();
+    if (cleanTitle.toLowerCase().includes("angrexxxxi") && cleanArtist.toLowerCase().includes("playlist")) continue;
+
+    const normTitle = cleanTitle.toLowerCase().replace(/\s*-\s*radio\s*edit/i, '').trim();
+    const key = `${normTitle}:::${cleanArtist.toLowerCase()}`;
+    if (!seen.has(key)) {
+      seen.add(key);
+      result.push({
+        ...item,
+        title: cleanTitle,
+        artist: cleanArtist
+      });
+    }
+  }
+  return result;
+}
+
 function formatSongDateTime(dateInput) {
   if (!dateInput) return "";
   let d;
@@ -134,35 +172,50 @@ function getStoredLastPlayed() {
 function renderSongStorageUI(latestSong, isCurrentlyLive = false, historyItems = null) {
   const song = latestSong || getStoredLastPlayed();
   if (rawLastPlayedText) {
+    let nextText = "[ no history recorded yet ]";
     if (song && song.title && song.artist) {
+      const cleanArtist = getCleanArtist(song.artist);
       if (isCurrentlyLive) {
-        rawLastPlayedText.textContent = `${song.title} — ${song.artist} (${song.dateTime || song.date_time || 'listening now'})`;
+        nextText = `${song.title} — ${cleanArtist} (${song.dateTime || song.date_time || 'listening now'})`;
       } else {
-        rawLastPlayedText.textContent = `${song.title} — ${song.artist} (${song.dateTime || song.date_time || ''})`;
+        nextText = `${song.title} — ${cleanArtist} (${song.dateTime || song.date_time || ''})`;
       }
-    } else {
-      rawLastPlayedText.textContent = "[ no history recorded yet ]";
+    }
+    if (rawLastPlayedText.textContent !== nextText) {
+      rawLastPlayedText.textContent = nextText;
     }
   }
 
   if (rawSpotifyText && song && song.title && song.artist) {
     if (isCurrentlyLive) {
-      rawSpotifyText.textContent = `${song.title} — ${song.artist}`;
+      const cleanArtist = getCleanArtist(song.artist);
+      const nextLiveText = `${song.title} — ${cleanArtist}`;
+      if (rawSpotifyText.textContent !== nextLiveText) {
+        rawSpotifyText.textContent = nextLiveText;
+      }
     }
   }
 
   if (rawHistoryList) {
-    const history = (Array.isArray(historyItems) && historyItems.length > 0) ? historyItems : getStoredSongHistory();
+    const rawHistory = (Array.isArray(historyItems) && historyItems.length > 0) ? historyItems : getStoredSongHistory();
+    const history = sanitizeAndDedupeHistory(rawHistory);
     if (history.length > 0) {
-      rawHistoryList.innerHTML = history.map(item => `
+      const nextHtml = history.map(item => `
         <li>
           <span style="font-weight:500;">${item.title}</span> — <span>${item.artist}</span>
           <span style="opacity:0.6;margin-left:4px;font-size:12px;">(${item.dateTime || item.date_time || ''})</span>
         </li>
       `).join('');
-      if (rawHistoryDetails) rawHistoryDetails.style.display = "block";
+      if (rawHistoryList.innerHTML !== nextHtml) {
+        rawHistoryList.innerHTML = nextHtml;
+      }
+      if (rawHistoryDetails && rawHistoryDetails.style.display !== "block") {
+        rawHistoryDetails.style.display = "block";
+      }
     } else {
-      if (rawHistoryDetails) rawHistoryDetails.style.display = "none";
+      if (rawHistoryDetails && rawHistoryDetails.style.display !== "none") {
+        rawHistoryDetails.style.display = "none";
+      }
     }
   }
 }
@@ -171,36 +224,39 @@ function syncLastFmHistory(tracks) {
   if (!Array.isArray(tracks) || tracks.length === 0) return;
   const history = tracks.map(tr => {
     const title = tr.name || "Unknown Track";
-    const artist = (tr.artist && (tr.artist['#text'] || tr.artist.name)) || "Unknown Artist";
+    const artist = getCleanArtist((tr.artist && (tr.artist['#text'] || tr.artist.name)) || "Unknown Artist");
     let ts = Date.now();
     if (tr.date && tr.date.uts) {
       ts = parseInt(tr.date.uts, 10) * 1000;
     }
     return {
       title: title.trim(),
-      artist: artist.trim(),
+      artist: artist,
       timestamp: ts,
       dateTime: formatSongDateTime(ts),
       date_time: formatSongDateTime(ts),
       is_playing: Boolean(tr['@attr'] && tr['@attr'].nowplaying === "true")
     };
-  }).filter(item => !(item.title.toLowerCase().includes("angrexxxxi") && item.artist.toLowerCase().includes("playlist")));
+  });
 
-  if (history.length > 0) {
+  const deduped = sanitizeAndDedupeHistory(history);
+  if (deduped.length > 0) {
     try {
-      localStorage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify(history.slice(0, 10)));
+      localStorage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify(deduped.slice(0, 10)));
     } catch (_) {}
-    renderSongStorageUI(null, false, history);
+    renderSongStorageUI(null, false, deduped);
   }
 }
 
 // Save song to online storage (and local cache fallback)
-async function saveSongOnline(title, artist, timestamp, isCurrentlyLive = false) {
-  if (!title || !artist) return;
-  if (title.toLowerCase().includes("angrexxxxi") && artist.toLowerCase().includes("playlist")) return;
+let lastSavedOnlineKey = "";
 
+async function saveSongOnline(title, rawArtist, timestamp, isCurrentlyLive = false) {
+  if (!title || !rawArtist) return;
   const cleanTitle = title.trim();
-  const cleanArtist = artist.trim();
+  const cleanArtist = getCleanArtist(rawArtist);
+  if (cleanTitle.toLowerCase().includes("angrexxxxi") && cleanArtist.toLowerCase().includes("playlist")) return;
+
   const ts = typeof timestamp === 'number' ? (timestamp < 1e11 ? timestamp * 1000 : timestamp) : Date.now();
   const formatted = formatSongDateTime(ts);
 
@@ -213,10 +269,27 @@ async function saveSongOnline(title, artist, timestamp, isCurrentlyLive = false)
     is_playing: isCurrentlyLive
   };
 
-  // Immediate UI update
+  // Immediate UI update (flicker-free check inside)
   renderSongStorageUI(songEntry, isCurrentlyLive);
 
-  // 1. Post to Cloudflare Worker online storage
+  // Update local cache
+  try {
+    localStorage.setItem(STORAGE_KEYS.LAST_PLAYED, JSON.stringify(songEntry));
+    let history = getStoredSongHistory();
+    history = history.filter(item => !isSameTrack(item, songEntry));
+    history.unshift(songEntry);
+    history = sanitizeAndDedupeHistory(history).slice(0, 10);
+    localStorage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify(history));
+  } catch (_) {}
+
+  // Deduplicate network POST requests: don't POST repeatedly if same song & live state
+  const saveKey = `${cleanTitle}:::${cleanArtist}:::${isCurrentlyLive}:::${Math.floor(ts / 120000)}`;
+  if (saveKey === lastSavedOnlineKey) {
+    return;
+  }
+  lastSavedOnlineKey = saveKey;
+
+  // Post to Cloudflare Worker online storage
   try {
     fetch(ONLINE_STORAGE_CONFIG.endpoint, {
       method: "POST",
@@ -230,7 +303,8 @@ async function saveSongOnline(title, artist, timestamp, isCurrentlyLive = false)
       })
     }).then(res => res.json()).then(data => {
       if (data && data.history && Array.isArray(data.history)) {
-        renderSongStorageUI(songEntry, isCurrentlyLive, data.history);
+        const deduped = sanitizeAndDedupeHistory(data.history);
+        renderSongStorageUI(songEntry, isCurrentlyLive, deduped);
       }
     }).catch(err => {
       console.warn("Online storage Worker POST warning:", err);
@@ -238,16 +312,6 @@ async function saveSongOnline(title, artist, timestamp, isCurrentlyLive = false)
   } catch (err) {
     console.warn("Online storage POST error:", err);
   }
-
-  // 2. Local cache fallback
-  try {
-    localStorage.setItem(STORAGE_KEYS.LAST_PLAYED, JSON.stringify(songEntry));
-    let history = getStoredSongHistory();
-    history = history.filter(item => !(item.title.toLowerCase() === cleanTitle.toLowerCase() && item.artist.toLowerCase() === cleanArtist.toLowerCase()));
-    history.unshift(songEntry);
-    if (history.length > 10) history = history.slice(0, 10);
-    localStorage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify(history));
-  } catch (_) {}
 }
 
 // Fetch from online storage
@@ -258,17 +322,20 @@ async function fetchOnlineSongHistory() {
     if (res.ok) {
       const data = await res.json();
       if (data && data.title && data.artist) {
+        const cleanArtist = getCleanArtist(data.artist);
         const onlineSong = {
           title: data.title,
-          artist: data.artist,
+          artist: cleanArtist,
           timestamp: data.timestamp || Date.now(),
           dateTime: data.date_time || formatSongDateTime(data.timestamp),
           date_time: data.date_time || formatSongDateTime(data.timestamp)
         };
-        const onlineHistory = Array.isArray(data.history) ? data.history.map(h => ({
+        const rawOnlineHistory = Array.isArray(data.history) ? data.history : [];
+        const onlineHistory = sanitizeAndDedupeHistory(rawOnlineHistory.map(h => ({
           ...h,
+          artist: getCleanArtist(h.artist),
           dateTime: h.date_time || h.dateTime || formatSongDateTime(h.timestamp)
-        })) : [];
+        })));
 
         if (Boolean(data.is_playing) && rawSpotifyText) {
           rawSpotifyText.textContent = `${onlineSong.title} — ${onlineSong.artist}`;
@@ -1040,8 +1107,12 @@ function renderSpotifyUI(state) {
       statusDot.parentElement.className = `track-status-line ${platform}`;
     }
     if (equalizer) equalizer.classList.add("active");
-    if (rawSpotifyText) rawSpotifyText.textContent = `${state.title} — ${state.artist}`;
-    saveSongOnline(state.title, state.artist, Date.now(), true);
+    const cleanArtist = getCleanArtist(state.artist);
+    if (rawSpotifyText) {
+      const liveText = `${state.title} — ${cleanArtist}`;
+      if (rawSpotifyText.textContent !== liveText) rawSpotifyText.textContent = liveText;
+    }
+    saveSongOnline(state.title, cleanArtist, Date.now(), true);
 
     // Fetch live lyrics for currently playing track
     if (state.title) {
@@ -1075,7 +1146,9 @@ function renderSpotifyUI(state) {
     if (statusMsg) statusMsg.textContent = "Offline • Playlist";
     if (statusDot && statusDot.parentElement) statusDot.parentElement.className = "track-status-line offline";
     if (equalizer) equalizer.classList.remove("active");
-    if (rawSpotifyText) rawSpotifyText.textContent = "[ playing nothing ]";
+    if (rawSpotifyText && rawSpotifyText.textContent !== "[ playing nothing ]") {
+      rawSpotifyText.textContent = "[ playing nothing ]";
+    }
     renderSongStorageUI(null, false);
 
     if (lyricsScroll) {
@@ -1959,7 +2032,6 @@ async function fetchLastFmNowPlaying() {
         currentPlaybackState = preservePreciseTiming(lastFmState);
 
         renderSpotifyUI(currentPlaybackState);
-        saveSongOnline(title, artist, Date.now(), true);
         if (tracks.length > 1) {
           syncLastFmHistory(tracks.slice(1));
         }
@@ -1996,8 +2068,9 @@ async function fetchLastFmNowPlaying() {
         trackTime = parseInt(currentTrack.date.uts, 10) * 1000;
       }
       const stored = getStoredLastPlayed();
-      if (!stored || !stored.timestamp || trackTime >= stored.timestamp) {
-        saveSongOnline(title, artist, trackTime, false);
+      const cleanArtist = getCleanArtist(artist);
+      if (!stored || !stored.timestamp || trackTime > stored.timestamp) {
+        saveSongOnline(title, cleanArtist, trackTime, false);
       } else {
         renderSongStorageUI(stored, false);
       }
@@ -2040,18 +2113,62 @@ if (shuffleBtn) {
   });
 }
 
-// Mute theme
-muteBtn.addEventListener('click', () => {
-  isMuted = !isMuted;
-  themeAudio.muted = isMuted;
-  muteText.textContent = isMuted ? "unmute" : "mute theme";
+// Mute/Unmute Theme Audio (Desktop & Mobile Touch)
+let isThemeMuted = false;
+
+function updateMuteButtonUI(muted) {
+  isThemeMuted = muted;
+  if (muteBtn) {
+    muteBtn.setAttribute('title', muted ? "Unmute background audio" : "Mute background audio");
+    muteBtn.setAttribute('aria-label', muted ? "Unmute background audio" : "Mute background audio");
+  }
+  if (muteText) {
+    muteText.textContent = muted ? "unmute" : "mute theme";
+  }
   const muteIcon = document.getElementById('mute-icon');
   if (muteIcon) {
-    muteIcon.innerHTML = isMuted
+    muteIcon.innerHTML = muted
       ? `<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line>`
       : `<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>`;
   }
-});
+}
+
+function toggleThemeAudioMute(e) {
+  if (e) {
+    e.preventDefault();
+    e.stopPropagation();
+  }
+  if (!themeAudio) return;
+
+  // If audio is currently playing and not muted -> Mute and Pause
+  if (!isThemeMuted && !themeAudio.paused) {
+    themeAudio.muted = true;
+    themeAudio.pause();
+    updateMuteButtonUI(true);
+  } else {
+    // Audio is paused or muted -> Unmute and Play
+    themeAudio.muted = false;
+    const playPromise = themeAudio.play();
+    if (playPromise && typeof playPromise.then === 'function') {
+      playPromise.then(() => {
+        updateMuteButtonUI(false);
+        if (!currentPlaybackState.isPlaying && currentActiveMediaView === "lyrics") {
+          syncThemeAudioLyrics();
+        }
+      }).catch((err) => {
+        console.warn("themeAudio play failed:", err);
+        updateMuteButtonUI(true);
+      });
+    } else {
+      updateMuteButtonUI(false);
+    }
+  }
+}
+
+if (muteBtn) {
+  muteBtn.addEventListener('click', toggleThemeAudioMute);
+  muteBtn.addEventListener('touchend', toggleThemeAudioMute, { passive: false });
+}
 
 // Initialize on page load
 fetchLastFmNowPlaying();
@@ -2091,6 +2208,7 @@ function doDrop(e) {
 
   if (playPromise && typeof playPromise.then === 'function') {
     playPromise.then(() => {
+      updateMuteButtonUI(false);
       if (!currentPlaybackState.isPlaying && currentActiveMediaView === "lyrics") {
         syncThemeAudioLyrics();
       }

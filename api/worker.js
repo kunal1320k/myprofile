@@ -29,6 +29,44 @@ function corsHeaders(extra = {}) {
   };
 }
 
+function getCleanArtist(raw) {
+  if (!raw) return "";
+  return raw.split(/\s*•\s*/)[0].trim();
+}
+
+function isSameTrack(a, b) {
+  if (!a || !b) return false;
+  const tA = (a.title || "").toLowerCase().replace(/\s*-\s*radio\s*edit/i, '').trim();
+  const tB = (b.title || "").toLowerCase().replace(/\s*-\s*radio\s*edit/i, '').trim();
+  const aA = getCleanArtist(a.artist).toLowerCase();
+  const aB = getCleanArtist(b.artist).toLowerCase();
+  return (tA === tB && aA === aB);
+}
+
+function sanitizeAndDedupeHistory(items) {
+  if (!Array.isArray(items)) return [];
+  const seen = new Set();
+  const result = [];
+  for (const item of items) {
+    if (!item || !item.title || !item.artist) continue;
+    const cleanArtist = getCleanArtist(item.artist);
+    const cleanTitle = item.title.trim();
+    if (cleanTitle.toLowerCase().includes("angrexxxxi") && cleanArtist.toLowerCase().includes("playlist")) continue;
+
+    const normTitle = cleanTitle.toLowerCase().replace(/\s*-\s*radio\s*edit/i, '').trim();
+    const key = `${normTitle}:::${cleanArtist.toLowerCase()}`;
+    if (!seen.has(key)) {
+      seen.add(key);
+      result.push({
+        ...item,
+        title: cleanTitle,
+        artist: cleanArtist
+      });
+    }
+  }
+  return result;
+}
+
 function formatSongDateTime(dateInput) {
   if (!dateInput) return "";
   let d;
@@ -67,8 +105,10 @@ async function fetchOnlineLastFmTracks() {
 
       tracks.forEach((tr) => {
         const title = tr.name;
-        const artist = (tr.artist && (tr.artist['#text'] || tr.artist.name)) || "";
-        if (!title || !artist) return;
+        const rawArtist = (tr.artist && (tr.artist['#text'] || tr.artist.name)) || "";
+        if (!title || !rawArtist) return;
+        const artist = getCleanArtist(rawArtist);
+        if (!artist) return;
 
         let ts = Date.now();
         if (tr.date && tr.date.uts) {
@@ -78,7 +118,7 @@ async function fetchOnlineLastFmTracks() {
         const isLive = Boolean(tr['@attr'] && tr['@attr'].nowplaying === "true");
         const entry = {
           title: title.trim(),
-          artist: artist.trim(),
+          artist: artist,
           timestamp: ts,
           date_time: formatSongDateTime(ts),
           is_playing: isLive
@@ -90,10 +130,11 @@ async function fetchOnlineLastFmTracks() {
         history.push(entry);
       });
 
-      const top = liveSong || history[0];
+      const cleanHistory = sanitizeAndDedupeHistory(history).slice(0, 15);
+      const top = liveSong || cleanHistory[0];
       return {
         latest: top,
-        history: history.slice(0, 10)
+        history: cleanHistory
       };
     }
   } catch (e) {
@@ -142,7 +183,7 @@ export default {
           }
 
           const title = body.title.trim();
-          const artist = body.artist.trim();
+          const artist = getCleanArtist(body.artist);
           const ts = typeof body.timestamp === 'number' ? body.timestamp : Date.now();
           const dateTime = body.date_time || formatSongDateTime(ts);
           const isPlaying = Boolean(body.is_playing);
@@ -155,13 +196,11 @@ export default {
             is_playing: isPlaying
           };
 
-          // Update edge memory cache
+          // Update edge memory cache with deduplication
           edgeLastPlayed = songEntry;
-          edgeSongHistory = edgeSongHistory.filter(
-            item => !(item.title.toLowerCase() === title.toLowerCase() && item.artist.toLowerCase() === artist.toLowerCase())
-          );
+          edgeSongHistory = edgeSongHistory.filter(item => !isSameTrack(item, songEntry));
           edgeSongHistory.unshift(songEntry);
-          if (edgeSongHistory.length > 15) edgeSongHistory = edgeSongHistory.slice(0, 15);
+          edgeSongHistory = sanitizeAndDedupeHistory(edgeSongHistory).slice(0, 15);
 
           // Update Cloudflare KV if configured
           if (env && env.SONG_KV) {
@@ -226,10 +265,18 @@ export default {
               try {
                 await env.SONG_KV.put("last_played_song", JSON.stringify(storedSong));
                 await env.SONG_KV.put("song_history", JSON.stringify(historyList));
-              } catch (_) {}
+              } catch (_) { }
             }
           }
         }
+
+        if (storedSong && storedSong.artist) {
+          storedSong = {
+            ...storedSong,
+            artist: getCleanArtist(storedSong.artist)
+          };
+        }
+        historyList = sanitizeAndDedupeHistory(historyList).slice(0, 15);
 
         return new Response(
           JSON.stringify({
