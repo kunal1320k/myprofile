@@ -270,11 +270,13 @@ export default {
           }
         }
 
-        if (storedSong && storedSong.artist) {
+        if (storedSong && storedSong.title && storedSong.artist) {
           storedSong = {
             ...storedSong,
             artist: getCleanArtist(storedSong.artist)
           };
+          historyList = historyList.filter(item => !isSameTrack(item, storedSong));
+          historyList.unshift(storedSong);
         }
         historyList = sanitizeAndDedupeHistory(historyList).slice(0, 15);
 

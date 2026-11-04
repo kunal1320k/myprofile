@@ -169,6 +169,51 @@ function getStoredLastPlayed() {
   }
 }
 
+function getUnifiedHistory(incomingItems = null, activeSong = null) {
+  const currentSong = activeSong || getStoredLastPlayed();
+  const existingStored = getStoredSongHistory();
+  const pool = [];
+
+  // 1. Current / last played song is ALWAYS at the top of history
+  if (currentSong && currentSong.title && currentSong.artist) {
+    const cleanArtist = getCleanArtist(currentSong.artist);
+    pool.push({
+      title: currentSong.title.trim(),
+      artist: cleanArtist,
+      timestamp: currentSong.timestamp || Date.now(),
+      dateTime: currentSong.dateTime || currentSong.date_time || formatSongDateTime(currentSong.timestamp || Date.now()),
+      date_time: currentSong.dateTime || currentSong.date_time || formatSongDateTime(currentSong.timestamp || Date.now())
+    });
+  }
+
+  // 2. Incoming items (from Last.fm or online storage)
+  if (Array.isArray(incomingItems)) {
+    for (const item of incomingItems) {
+      if (item && item.title && item.artist) {
+        pool.push({
+          title: item.title.trim(),
+          artist: getCleanArtist(item.artist),
+          timestamp: item.timestamp || Date.now(),
+          dateTime: item.dateTime || item.date_time || formatSongDateTime(item.timestamp || Date.now()),
+          date_time: item.dateTime || item.date_time || formatSongDateTime(item.timestamp || Date.now())
+        });
+      }
+    }
+  }
+
+  // 3. Existing local storage history
+  if (Array.isArray(existingStored)) {
+    for (const item of existingStored) {
+      if (item && item.title && item.artist) {
+        pool.push(item);
+      }
+    }
+  }
+
+  // 4. Sanitize and deduplicate
+  return sanitizeAndDedupeHistory(pool).slice(0, 10);
+}
+
 function renderSongStorageUI(latestSong, isCurrentlyLive = false, historyItems = null) {
   const song = latestSong || getStoredLastPlayed();
   if (rawLastPlayedText) {
@@ -181,7 +226,8 @@ function renderSongStorageUI(latestSong, isCurrentlyLive = false, historyItems =
         nextText = `${song.title} — ${cleanArtist} (${song.dateTime || song.date_time || ''})`;
       }
     }
-    if (rawLastPlayedText.textContent !== nextText) {
+    if (rawLastPlayedText.dataset.currentText !== nextText) {
+      rawLastPlayedText.dataset.currentText = nextText;
       rawLastPlayedText.textContent = nextText;
     }
   }
@@ -190,24 +236,20 @@ function renderSongStorageUI(latestSong, isCurrentlyLive = false, historyItems =
     if (isCurrentlyLive) {
       const cleanArtist = getCleanArtist(song.artist);
       const nextLiveText = `${song.title} — ${cleanArtist}`;
-      if (rawSpotifyText.textContent !== nextLiveText) {
+      if (rawSpotifyText.dataset.currentText !== nextLiveText) {
+        rawSpotifyText.dataset.currentText = nextLiveText;
         rawSpotifyText.textContent = nextLiveText;
       }
     }
   }
 
   if (rawHistoryList) {
-    const rawHistory = (Array.isArray(historyItems) && historyItems.length > 0) ? historyItems : getStoredSongHistory();
-    const history = sanitizeAndDedupeHistory(rawHistory);
+    const history = getUnifiedHistory(historyItems, song);
     if (history.length > 0) {
-      const nextHtml = history.map(item => `
-        <li>
-          <span style="font-weight:500;">${item.title}</span> — <span>${item.artist}</span>
-          <span style="opacity:0.6;margin-left:4px;font-size:12px;">(${item.dateTime || item.date_time || ''})</span>
-        </li>
-      `).join('');
-      if (rawHistoryList.innerHTML !== nextHtml) {
-        rawHistoryList.innerHTML = nextHtml;
+      const historyKey = history.map(item => `${item.title}:::${item.artist}:::${item.dateTime || item.date_time || ''}`).join('|||');
+      if (rawHistoryList.dataset.currentKey !== historyKey) {
+        rawHistoryList.dataset.currentKey = historyKey;
+        rawHistoryList.innerHTML = history.map(item => `<li><span style="font-weight:500;">${item.title}</span> — <span>${item.artist}</span> <span style="opacity:0.6;margin-left:4px;font-size:12px;">(${item.dateTime || item.date_time || ''})</span></li>`).join('');
       }
       if (rawHistoryDetails && rawHistoryDetails.style.display !== "block") {
         rawHistoryDetails.style.display = "block";
@@ -239,12 +281,13 @@ function syncLastFmHistory(tracks) {
     };
   });
 
-  const deduped = sanitizeAndDedupeHistory(history);
-  if (deduped.length > 0) {
+  const currentSong = getStoredLastPlayed();
+  const unified = getUnifiedHistory(history, currentSong);
+  if (unified.length > 0) {
     try {
-      localStorage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify(deduped.slice(0, 10)));
+      localStorage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify(unified));
     } catch (_) {}
-    renderSongStorageUI(null, false, deduped);
+    renderSongStorageUI(currentSong, currentPlaybackState.isPlaying, unified);
   }
 }
 
@@ -269,17 +312,14 @@ async function saveSongOnline(title, rawArtist, timestamp, isCurrentlyLive = fal
     is_playing: isCurrentlyLive
   };
 
-  // Immediate UI update (flicker-free check inside)
-  renderSongStorageUI(songEntry, isCurrentlyLive);
+  // Immediate UI update with unified history
+  const unified = getUnifiedHistory([songEntry], songEntry);
+  renderSongStorageUI(songEntry, isCurrentlyLive, unified);
 
   // Update local cache
   try {
     localStorage.setItem(STORAGE_KEYS.LAST_PLAYED, JSON.stringify(songEntry));
-    let history = getStoredSongHistory();
-    history = history.filter(item => !isSameTrack(item, songEntry));
-    history.unshift(songEntry);
-    history = sanitizeAndDedupeHistory(history).slice(0, 10);
-    localStorage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify(history));
+    localStorage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify(unified));
   } catch (_) {}
 
   // Deduplicate network POST requests: don't POST repeatedly if same song & live state
@@ -303,8 +343,11 @@ async function saveSongOnline(title, rawArtist, timestamp, isCurrentlyLive = fal
       })
     }).then(res => res.json()).then(data => {
       if (data && data.history && Array.isArray(data.history)) {
-        const deduped = sanitizeAndDedupeHistory(data.history);
-        renderSongStorageUI(songEntry, isCurrentlyLive, deduped);
+        const unifiedOnline = getUnifiedHistory(data.history, songEntry);
+        renderSongStorageUI(songEntry, isCurrentlyLive, unifiedOnline);
+        try {
+          localStorage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify(unifiedOnline));
+        } catch (_) {}
       }
     }).catch(err => {
       console.warn("Online storage Worker POST warning:", err);
@@ -331,22 +374,18 @@ async function fetchOnlineSongHistory() {
           date_time: data.date_time || formatSongDateTime(data.timestamp)
         };
         const rawOnlineHistory = Array.isArray(data.history) ? data.history : [];
-        const onlineHistory = sanitizeAndDedupeHistory(rawOnlineHistory.map(h => ({
-          ...h,
-          artist: getCleanArtist(h.artist),
-          dateTime: h.date_time || h.dateTime || formatSongDateTime(h.timestamp)
-        })));
+        const unifiedOnline = getUnifiedHistory(rawOnlineHistory, onlineSong);
 
         if (Boolean(data.is_playing) && rawSpotifyText) {
           rawSpotifyText.textContent = `${onlineSong.title} — ${onlineSong.artist}`;
         }
-        renderSongStorageUI(onlineSong, Boolean(data.is_playing), onlineHistory);
+        renderSongStorageUI(onlineSong, Boolean(data.is_playing), unifiedOnline);
 
         // Update local cache
         try {
           localStorage.setItem(STORAGE_KEYS.LAST_PLAYED, JSON.stringify(onlineSong));
-          if (onlineHistory.length > 0) {
-            localStorage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify(onlineHistory));
+          if (unifiedOnline.length > 0) {
+            localStorage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify(unifiedOnline));
           }
         } catch (_) {}
         return;
@@ -382,7 +421,7 @@ async function fetchOnlineSongHistory() {
         const isLive = Boolean(tr['@attr'] && tr['@attr'].nowplaying === "true");
         const entry = {
           title: title.trim(),
-          artist: artist.trim(),
+          artist: getCleanArtist(artist),
           timestamp: ts,
           dateTime: formatSongDateTime(ts),
           date_time: formatSongDateTime(ts),
@@ -397,10 +436,11 @@ async function fetchOnlineSongHistory() {
 
       const top = liveSong || history[0];
       if (top) {
-        renderSongStorageUI(top, Boolean(top.is_playing), history);
+        const unified = getUnifiedHistory(history, top);
+        renderSongStorageUI(top, Boolean(top.is_playing), unified);
         try {
           localStorage.setItem(STORAGE_KEYS.LAST_PLAYED, JSON.stringify(top));
-          localStorage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify(history.slice(0, 10)));
+          localStorage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify(unified));
         } catch (_) {}
       }
     }
@@ -2032,8 +2072,8 @@ async function fetchLastFmNowPlaying() {
         currentPlaybackState = preservePreciseTiming(lastFmState);
 
         renderSpotifyUI(currentPlaybackState);
-        if (tracks.length > 1) {
-          syncLastFmHistory(tracks.slice(1));
+        if (tracks.length > 0) {
+          syncLastFmHistory(tracks);
         }
 
         // Fetch duration & fallback artwork in background
