@@ -162,6 +162,10 @@ body.aesthetic {
     .drop-wrap {
       position: relative;
       display: inline-block;
+      width: -moz-fit-content;
+      width: fit-content;
+      max-width: fit-content;
+      align-self: flex-start;
       margin-top: 28px;
       touch-action: manipulation;
     }
@@ -218,6 +222,7 @@ body.aesthetic {
     #drop {
       position: relative;
       z-index: 2;
+      display: block;
       font-family: inherit;
       font-size: 14px;
       font-weight: 500;
