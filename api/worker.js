@@ -270,6 +270,19 @@ export default {
           }
         }
 
+        // Expire stale is_playing (> 3 minutes without a live ping)
+        if (storedSong && storedSong.is_playing) {
+          const age = Date.now() - (storedSong.timestamp || 0);
+          if (age > 180000) {
+            storedSong.is_playing = false;
+            if (env && env.SONG_KV) {
+              try {
+                await env.SONG_KV.put("last_played_song", JSON.stringify(storedSong));
+              } catch (_) {}
+            }
+          }
+        }
+
         if (storedSong && storedSong.title && storedSong.artist) {
           storedSong = {
             ...storedSong,

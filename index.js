@@ -232,14 +232,13 @@ function renderSongStorageUI(latestSong, isCurrentlyLive = false, historyItems =
     }
   }
 
-  if (rawSpotifyText && song && song.title && song.artist) {
-    if (isCurrentlyLive) {
-      const cleanArtist = getCleanArtist(song.artist);
-      const nextLiveText = `${song.title} — ${cleanArtist}`;
-      if (rawSpotifyText.dataset.currentText !== nextLiveText) {
-        rawSpotifyText.dataset.currentText = nextLiveText;
-        rawSpotifyText.textContent = nextLiveText;
-      }
+  if (rawSpotifyText) {
+    const nextLiveText = (isCurrentlyLive && song && song.title && song.artist)
+      ? `${song.title} — ${getCleanArtist(song.artist)}`
+      : "[ playing nothing ]";
+    if (rawSpotifyText.dataset.currentText !== nextLiveText) {
+      rawSpotifyText.dataset.currentText = nextLiveText;
+      rawSpotifyText.textContent = nextLiveText;
     }
   }
 
@@ -375,11 +374,18 @@ async function fetchOnlineSongHistory() {
         };
         const rawOnlineHistory = Array.isArray(data.history) ? data.history : [];
         const unifiedOnline = getUnifiedHistory(rawOnlineHistory, onlineSong);
+        const isLive = Boolean(data.is_playing);
 
-        if (Boolean(data.is_playing) && rawSpotifyText) {
-          rawSpotifyText.textContent = `${onlineSong.title} — ${onlineSong.artist}`;
+        if (rawSpotifyText) {
+          const liveText = (isLive && onlineSong.title && onlineSong.artist)
+            ? `${onlineSong.title} — ${onlineSong.artist}`
+            : "[ playing nothing ]";
+          if (rawSpotifyText.dataset.currentText !== liveText) {
+            rawSpotifyText.dataset.currentText = liveText;
+            rawSpotifyText.textContent = liveText;
+          }
         }
-        renderSongStorageUI(onlineSong, Boolean(data.is_playing), unifiedOnline);
+        renderSongStorageUI(onlineSong, isLive, unifiedOnline);
 
         // Update local cache
         try {
@@ -1186,8 +1192,11 @@ function renderSpotifyUI(state) {
     if (statusMsg) statusMsg.textContent = "Offline • Playlist";
     if (statusDot && statusDot.parentElement) statusDot.parentElement.className = "track-status-line offline";
     if (equalizer) equalizer.classList.remove("active");
-    if (rawSpotifyText && rawSpotifyText.textContent !== "[ playing nothing ]") {
-      rawSpotifyText.textContent = "[ playing nothing ]";
+    if (rawSpotifyText) {
+      if (rawSpotifyText.dataset.currentText !== "[ playing nothing ]") {
+        rawSpotifyText.dataset.currentText = "[ playing nothing ]";
+        rawSpotifyText.textContent = "[ playing nothing ]";
+      }
     }
     renderSongStorageUI(null, false);
 
@@ -2109,7 +2118,7 @@ async function fetchLastFmNowPlaying() {
       }
       const stored = getStoredLastPlayed();
       const cleanArtist = getCleanArtist(artist);
-      if (!stored || !stored.timestamp || trackTime > stored.timestamp) {
+      if (!stored || !stored.timestamp || trackTime > stored.timestamp || (stored && stored.is_playing)) {
         saveSongOnline(title, cleanArtist, trackTime, false);
       } else {
         renderSongStorageUI(stored, false);
@@ -2118,7 +2127,7 @@ async function fetchLastFmNowPlaying() {
     }
 
     // If Last.fm is not playing and Lanyard socket is not reporting a live song
-    if (currentPlaybackState.isPlaying && !lanyardSocketActive && (Date.now() - lastFmLastSeenPlaying > 15000)) {
+    if (currentPlaybackState.isPlaying && !lanyardSocketActive) {
       currentPlaybackState = {
         isPlaying: false,
         title: SPOTIFY_CONFIG.playlist.title,
